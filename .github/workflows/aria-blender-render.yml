@@ -24,9 +24,9 @@ jobs:
         with:
           name: aria-blender-inputs-45411674206
           run-id: 45411674206
-          github-token: \${{ github.token }}
-          repository: \${{ github.repository }}
-          path: \${{ runner.temp }}/aria-inputs
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          path: ${{ runner.temp }}/aria-inputs
 
       - name: Install headless render dependencies
         shell: bash
@@ -38,23 +38,23 @@ jobs:
             libxext6 libgl1 libglx-mesa0 libegl1 libgl1-mesa-dri libxrandr2 \
             libxxf86vm1 libxcursor1 libxinerama1 libwayland-client0 libdecor-0-0 \
             xvfb xz-utils unzip python3-pil
-          mkdir -p "\${{ runner.temp }}/blender" "\${{ runner.temp }}/pmx"
-          tar -xf "\${{ runner.temp }}/aria-inputs/blender/blender-5.3.0-linux-x64.tar.xz" \
-            -C "\${{ runner.temp }}/blender"
-          BLENDER="$(find "\${{ runner.temp }}/blender" -type f -name blender -perm -111 | head -1)"
+          mkdir -p "${{ runner.temp }}/blender" "${{ runner.temp }}/pmx"
+          tar -xf "${{ runner.temp }}/aria-inputs/blender/blender-5.3.0-linux-x64.tar.xz" \
+            -C "${{ runner.temp }}/blender"
+          BLENDER="$(find "${{ runner.temp }}/blender" -type f -name blender -perm -111 | head -1)"
           test -x "$BLENDER"
           echo "BLENDER=$BLENDER" >> "$GITHUB_ENV"
           "$BLENDER" --version | head -5
-          sha256sum "\${{ runner.temp }}/aria-inputs/blender/blender-5.3.0-linux-x64.tar.xz"
+          sha256sum "${{ runner.temp }}/aria-inputs/blender/blender-5.3.0-linux-x64.tar.xz"
           ldd "$BLENDER" | grep "not found" && exit 1 || true
 
       - name: Extract PMX release model
         shell: bash
         run: |
           set -euo pipefail
-          unzip -oq "\${{ runner.temp }}/aria-inputs/repo/05_官方模型/爱芮_人形_PMX_官模原包.zip" \
-            -d "\${{ runner.temp }}/pmx"
-          PMX_FILE="$(find "\${{ runner.temp }}/pmx" -type f -name '爱芮.pmx' -print -quit)"
+          unzip -oq "${{ runner.temp }}/aria-inputs/repo/05_官方模型/爱芮_人形_PMX_官模原包.zip" \
+            -d "${{ runner.temp }}/pmx"
+          PMX_FILE="$(find "${{ runner.temp }}/pmx" -type f -name '爱芮.pmx' -print -quit)"
           test -n "$PMX_FILE"
           test -s "$PMX_FILE"
           echo "PMX_FILE=$PMX_FILE" >> "$GITHUB_ENV"
@@ -64,7 +64,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          INPUTS="\${{ runner.temp }}/aria-inputs"
+          INPUTS="${{ runner.temp }}/aria-inputs"
           OUT="$GITHUB_WORKSPACE/aria-ablation-out"
           mkdir -p "$OUT"
           GLB="$INPUTS/repo/04_站点镜像/models/aria/model.glb"
@@ -166,7 +166,7 @@ jobs:
       - name: Upload eight-render result bundle
         uses: actions/upload-artifact@v4
         with:
-          name: aria-blender-ablation-8renders-\${{ github.run_id }}
+          name: aria-blender-ablation-8renders-${{ github.run_id }}
           path: |
             aria-blender-ablation-8renders.zip
             aria-ablation-out/contact_all.png
