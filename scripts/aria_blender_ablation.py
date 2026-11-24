@@ -82,6 +82,7 @@ def make_pbr(name, dpath=None, npath=None, rough=.5, metal=0.0, family="body", a
     out=nt.nodes.new("ShaderNodeOutputMaterial"); out.location=(520,0)
     bs=nt.nodes.new("ShaderNodeBsdfPrincipled"); bs.location=(250,0)
     nt.links.new(bs.outputs["BSDF"],out.inputs["Surface"])
+    set_input(bs,"Base Color",(1.0,1.0,1.0,1.0))
     set_input(bs,"Roughness",rough); set_input(bs,"Metallic",metal)
     set_input(bs,"Specular IOR Level",0.48); set_input(bs,"Alpha",alpha)
     if family=="skin":
@@ -281,10 +282,10 @@ def build_glb(glb_path,contract_path,textures_dir,tuned):
             npath=os.path.join(textures_dir,nid+".png") if nid and family in ("body","hair") else None
             low=old.name.lower(); rough=.48; metal=0.0; mat_family="body"
             if "weapon" in low: rough=.30; metal=.22; mat_family="metal"
-            elif "eye" in low: rough=.20; mat_family="eyes"
-            elif "face" in low or "eyebrow" in low: rough=.58; mat_family="skin"
-            elif "hair" in low: rough=.29; mat_family="hair"
             elif "skirt" in low: rough=.46; mat_family="cloth"
+            elif family=="eyes": rough=.20; mat_family="eyes"
+            elif family=="face-sdf": rough=.58; mat_family="skin"
+            elif family=="hair": rough=.29; mat_family="hair"
             if (dpath and os.path.isfile(dpath)) or (npath and os.path.isfile(npath)):
                 new=make_pbr("Native_"+old.name,dpath,npath,rough,metal,mat_family)
                 replacements[old]=new
