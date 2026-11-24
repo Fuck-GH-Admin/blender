@@ -1,0 +1,177 @@
+name: AriaIdol Blender 8-render ablation
+
+on:
+  push:
+    branches:
+      - ops/aria-blender-transfer-20261124
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout isolated transfer branch
+        uses: actions/checkout@v4
+        with:
+          ref: ops/aria-blender-transfer-20261124
+
+      - name: Download verified Blender and AriaIdol inputs
+        uses: actions/download-artifact@v4
+        with:
+          name: aria-blender-inputs-45411674206
+          run-id: 45411674206
+          github-token: \${{ github.token }}
+          repository: \${{ github.repository }}
+          path: \${{ runner.temp }}/aria-inputs
+
+      - name: Install headless render dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            libx11-6 libxrender1 libxfixes3 libxi6 libxkbcommon0 libsm6 libice6 \
+            libxext6 libgl1 libglx-mesa0 libegl1 libgl1-mesa-dri libxrandr2 \
+            libxxf86vm1 libxcursor1 libxinerama1 libwayland-client0 libdecor-0-0 \
+            xvfb xz-utils unzip python3-pil
+          mkdir -p "\${{ runner.temp }}/blender" "\${{ runner.temp }}/pmx"
+          tar -xf "\${{ runner.temp }}/aria-inputs/blender/blender-5.3.0-linux-x64.tar.xz" \
+            -C "\${{ runner.temp }}/blender"
+          BLENDER="$(find "\${{ runner.temp }}/blender" -type f -name blender -perm -111 | head -1)"
+          test -x "$BLENDER"
+          echo "BLENDER=$BLENDER" >> "$GITHUB_ENV"
+          "$BLENDER" --version | head -5
+          sha256sum "\${{ runner.temp }}/aria-inputs/blender/blender-5.3.0-linux-x64.tar.xz"
+          ldd "$BLENDER" | grep "not found" && exit 1 || true
+
+      - name: Extract PMX release model
+        shell: bash
+        run: |
+          set -euo pipefail
+          unzip -oq "\${{ runner.temp }}/aria-inputs/repo/05_官方模型/爱芮_人形_PMX_官模原包.zip" \
+            -d "\${{ runner.temp }}/pmx"
+          PMX_FILE="$(find "\${{ runner.temp }}/pmx" -type f -name '爱芮.pmx' -print -quit)"
+          test -n "$PMX_FILE"
+          test -s "$PMX_FILE"
+          echo "PMX_FILE=$PMX_FILE" >> "$GITHUB_ENV"
+          find "$(dirname "$PMX_FILE")" -maxdepth 2 -type f | head -40
+
+      - name: Render four model/material conditions in EEVEE and Cycles
+        shell: bash
+        run: |
+          set -euo pipefail
+          INPUTS="\${{ runner.temp }}/aria-inputs"
+          OUT="$GITHUB_WORKSPACE/aria-ablation-out"
+          mkdir -p "$OUT"
+          GLB="$INPUTS/repo/04_站点镜像/models/aria/model.glb"
+          CONTRACT="$INPUTS/repo/04_站点镜像/contracts/00c580250fd8f42691f75cab6fbea3d5c45760f9f84bddc861e271ccbe152072.json"
+          TEXTURES="$INPUTS/repo/04_站点镜像/textures"
+          test -s "$GLB"; test -s "$CONTRACT"; test -s "$PMX_FILE"
+          xvfb-run -a env LIBGL_ALWAYS_SOFTWARE=1 "$BLENDER" -b -t 4 \
+            --python-exit-code 1 \
+            --python scripts/aria_blender_ablation.py -- \
+            --pmx "$PMX_FILE" --glb "$GLB" --contract "$CONTRACT" \
+            --textures "$TEXTURES" --out "$OUT"
+          ls -lh "$OUT"
+
+      - name: Create comparison sheets and experiment notes
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT="$GITHUB_WORKSPACE/aria-ablation-out"
+          python3 - "$OUT" <<'PY'
+          from PIL import Image, ImageDraw, ImageFont
+          import os, sys, json
+          out=sys.argv[1]
+          variants=[
+            ("pmx_base","PMX 基础材质"),
+            ("pmx_tuned","PMX 分部位材质"),
+            ("glb_imported","GLB 原始导入材质"),
+            ("glb_native_dn","GLB 原生 D/N + 分部位材质"),
+          ]
+          engines=["eevee","cycles"]
+          w,h,lh,gap,margin=384,576,36,18,24
+          font=ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",17)
+          for mode in ("all","eevee","cycles"):
+            cols=2 if mode=="all" else 1
+            c=Image.new("RGB",(margin*2+cols*w+(cols-1)*gap,
+                               margin*2+4*(h+lh)+3*gap),(27,30,37))
+            d=ImageDraw.Draw(c)
+            for ri,(key,label) in enumerate(variants):
+              for ci,e in enumerate(engines if mode=="all" else [mode]):
+                p=os.path.join(out,key+"_"+e+".png")
+                im=Image.open(p).convert("RGB")
+                x=margin+ci*(w+gap); y=margin+ri*(h+lh+gap)
+                c.paste(im,(x,y+lh))
+                d.text((x,y+8),label+" | "+e.upper(),font=font,fill=(240,242,247))
+            c.save(os.path.join(out,"contact_"+mode+".png"),optimize=True)
+          metrics=[]
+          for key,label in variants:
+            for e in engines:
+              p=os.path.join(out,key+"_"+e+".png")
+              im=Image.open(p).convert("RGB")
+              metrics.append({"file":os.path.basename(p),"bytes":os.path.getsize(p),"dimensions":im.size})
+          json.dump(metrics,open(os.path.join(out,"image_metrics.json"),"w"),ensure_ascii=False,indent=2)
+          PY
+          cp scripts/aria_blender_ablation.py "$OUT/"
+          cat > "$OUT/实验说明_中文.md" <<'MD'
+          # 爱芮 Blender 原生渲染消融实验 · 八张对照图
+
+          本轮复现四种模型 / 材质条件，每种分别用 Blender 原生 EEVEE 与 Cycles 渲染。
+
+          | 条件 | EEVEE | Cycles |
+          |---|---|---|
+          | PMX 基础材质 | pmx_base_eevee.png | pmx_base_cycles.png |
+          | PMX 分部位材质 | pmx_tuned_eevee.png | pmx_tuned_cycles.png |
+          | GLB 原始导入材质 | glb_imported_eevee.png | glb_imported_cycles.png |
+          | GLB 原生 D/N + 分部位材质 | glb_native_dn_eevee.png | glb_native_dn_cycles.png |
+
+          ## 固定条件
+          - Blender 5.3.0；只用内置 EEVEE / Cycles 与 Principled BSDF。
+          - 统一相机、构图、三盏面积灯、World 填充光、地面。
+          - 384×576；Standard 色彩管理；EV=0。
+          - EEVEE 8 TAA samples；Cycles 8 CPU samples + denoise。
+          - 两个模型都归一到 1.70 Blender units 高。
+
+          ## 材质处理
+          - PMX base：保留 PMX 原漫反射贴图与原始顶点法线，统一 roughness 0.52。
+          - PMX tuned：按头发、皮肤、眼睛、衣装和普通部位分别设置 roughness；皮肤加入很弱的 subsurface，头发加入受控 anisotropy / coat。
+          - GLB imported：保留 glTF 导入的原始材质图和占位参数。
+          - GLB native D/N：用 contract 绑定的 D 贴图作为 Base Color；仅 body / hair 的 _LightTex 按 RG 法线贴图处理。Face / Eye 的 _LightTex 是 SDF 数据，不会错误接到 Normal 输入；M/A/MatCap 不在本轮猜测映射。
+
+          ## PMX 限制
+          髮+ 为 sphere_mode=2 的加算叠层，不等同于不透明 Principled 材质，本轮不纳入普通 PBR 网格。PMX 包 README 的非商业 / 禁止二次配布限制仍然适用；本包只用于当前研究对照。
+
+          ## 解释边界
+          本轮固定 EV=0 与灯光，先比较模型 / 贴图 / 材质 / 引擎差异。网页端记录的曝光 0.9、灯光强度 1、Toon 阴影强度 0.72、Rim 强度 10 是后续校准参考，不代表 Blender 中可直接一一等价的参数。
+          MD
+          cat > "$OUT/ENVIRONMENT.txt" <<TXT
+          Blender 5.3.0
+          Runner: GitHub Actions ubuntu-latest
+          EEVEE backend: Mesa llvmpipe software OpenGL under Xvfb
+          Cycles: CPU, 8 samples, denoising enabled
+          No physical GPU used
+          TXT
+          (cd "$OUT" && sha256sum *.png *.blend *.py *.json *.md *.txt > SHA256SUMS.txt)
+          cd "$GITHUB_WORKSPACE"
+          zip -qr aria-blender-ablation-8renders.zip aria-ablation-out
+          unzip -t aria-blender-ablation-8renders.zip | tail -2
+          sha256sum aria-blender-ablation-8renders.zip
+          ls -lh aria-blender-ablation-8renders.zip
+
+      - name: Upload eight-render result bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: aria-blender-ablation-8renders-\${{ github.run_id }}
+          path: |
+            aria-blender-ablation-8renders.zip
+            aria-ablation-out/contact_all.png
+            aria-ablation-out/contact_eevee.png
+            aria-ablation-out/contact_cycles.png
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
