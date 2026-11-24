@@ -1,0 +1,1 @@
+var e=[`MC`,`Sneak`,`Gal`],t={MC:[`MC`,`MainCity`],Sneak:[`Sneak`],Gal:[`Gal`,`Galgame`]};function n(n){if(!n)return null;let r=/_Ani_(.+)$/.exec(n.trimEnd())?.[1]??n.trimEnd();for(let n of e)if(t[n].some(e=>r===e||r.startsWith(`${e}_`)))return n;return null}function r(e){return n(e)!==null}export{n,r as t};

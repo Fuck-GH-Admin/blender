@@ -1,0 +1,269 @@
+{
+  "schema": 1,
+  "entries": [
+    {
+      "id": "2026-11-23-c",
+      "date": "2026-11-23",
+      "items": [
+        {
+          "type": "character",
+          "text": {
+            "en": "New agents: Alice, Anby Demara, Burnice, Remielle and Seed.",
+            "es": "Nuevos agentes: Alice, Anby Demara, Burnice, Remielle y Seed.",
+            "zh": "新代理人：Alice、Anby Demara、Burnice、Remielle 和 Seed。"
+          }
+        },
+        {
+          "type": "character",
+          "text": {
+            "en": "Updated agents (now with animations): Aria, Orphie & Magus and SP Billy.",
+            "es": "Agentes actualizados (ahora con animaciones): Aria, Orphie & Magus y SP Billy.",
+            "zh": "已更新代理人（现已加入动画）：Aria、Orphie & Magus 和 SP Billy。"
+          }
+        },
+        {
+          "type": "character",
+          "text": {
+            "en": "New mob: Sobek.",
+            "es": "Nuevo enemigo: Sobek.",
+            "zh": "新敌人：Sobek。"
+          }
+        },
+        {
+          "type": "character",
+          "text": {
+            "en": "New skins with their own animations: JaneDoe · Nocturne and YiXuan · Trails of Ink.",
+            "es": "Nuevas skins con sus propias animaciones: JaneDoe · Nocturne y YiXuan · Trails of Ink.",
+            "zh": "带有专属动画的新皮肤：JaneDoe · Nocturne 和 YiXuan · Trails of Ink。"
+          }
+        },
+        {
+          "type": "feature",
+          "text": {
+            "en": "Something special happens with Aria, Sunna or Nangong Yu in their default outfit… look for the badge above Tools.",
+            "es": "Con Aria, Sunna o Nangong Yu en su atuendo original pasa algo especial… buscá la insignia arriba de Herramientas.",
+            "zh": "使用默认服装的 Aria、Sunna 或 Nangong Yu 时会发生一些特别的事……留意「工具」上方的徽章。"
+          }
+        },
+        {
+          "type": "ui",
+          "text": {
+            "en": "Layers: each category has a switch to show or hide all its layers at once, and helper shadow meshes are no longer listed.",
+            "es": "Capas: cada categoría tiene un interruptor para mostrar u ocultar todas sus capas de una vez, y ya no aparecen las mallas auxiliares de sombra.",
+            "zh": "图层：每个分类都有开关，可一次显示或隐藏其全部图层；辅助阴影网格不再列出。"
+          }
+        },
+        {
+          "type": "fix",
+          "text": {
+            "en": "Pose mode: editing just the mouth, eyes or eyebrows now keeps the rest of the animation's facial expression intact.",
+            "es": "Modo pose: al mover sólo la boca, los ojos o las cejas, el resto de la expresión facial de la animación ahora se mantiene intacta.",
+            "zh": "姿势模式：仅调整嘴巴、眼睛或眉毛时，动画其余的面部表情现在会保持不变。"
+          }
+        },
+        {
+          "type": "fix",
+          "text": {
+            "en": "Ground shadows no longer lose parts of the character while an animation plays.",
+            "es": "Las sombras en el piso ya no pierden partes del personaje mientras se reproduce una animación.",
+            "zh": "播放动画时，地面阴影不再缺失角色的部分。"
+          }
+        },
+        {
+          "type": "fix",
+          "text": {
+            "en": "Reset camera always returns to the starting view, even after moving the camera during an animation.",
+            "es": "Restablecer cámara siempre vuelve a la vista inicial, aunque hayas movido la cámara durante una animación.",
+            "zh": "即使在动画播放时移动过镜头，「重置镜头」也总能回到初始视角。"
+          }
+        },
+        {
+          "type": "ui",
+          "text": {
+            "en": "Character picker: a Model only badge marks characters without animations yet, and you can change the language from there.",
+            "es": "Selector de personajes: la etiqueta Solo modelo marca a quienes todavía no tienen animaciones, y ahí mismo podés cambiar el idioma.",
+            "zh": "角色选择器：「仅模型」标签会标出尚无动画的角色，也可以直接在这里切换语言。"
+          }
+        },
+        {
+          "type": "fix",
+          "text": {
+            "en": "Light control: smoother to aim, the light always stays above the floor, ground shadows are no longer cut off, and the light turntable keeps shading and shadows together.",
+            "es": "Control de luz: más fácil de apuntar, la luz siempre queda por encima del piso, las sombras en el piso ya no se cortan y el giro de luz mantiene juntos el sombreado y las sombras.",
+            "zh": "光照控制：更容易调整方向，光源始终位于地面上方，地面阴影不再被截断，光源转盘也会让明暗与阴影保持同步。"
+          }
+        },
+        {
+          "type": "feature",
+          "text": {
+            "en": "ZZZ Global: translucent parts such as wings now glow when light shines from behind.",
+            "es": "ZZZ Global: las partes translúcidas, como las alas, ahora brillan cuando la luz les da desde atrás.",
+            "zh": "ZZZ Global：翅膀等半透明部件在背光照射时会透出光亮。"
+          }
+        },
+        {
+          "type": "fix",
+          "text": {
+            "en": "Mistyped character links still open the character, reloading no longer flashes the character picker, and the loading art and view axes fit better on phones.",
+            "es": "Los enlaces de personajes mal escritos igual abren al personaje, al recargar ya no aparece por un instante el selector, y en el celular el arte de carga y los ejes de la vista se acomodan mejor.",
+            "zh": "输错的角色链接也能打开对应角色，刷新时不再闪现角色选择器，手机上的加载插画和视角坐标轴也显示得更合适。"
+          }
+        }
+      ]
+    },
+    {
+      "id": "2026-11-23-b",
+      "date": "2026-11-23",
+      "items": [
+        {
+          "type": "character",
+          "text": {
+            "en": "New skin: Astra Yao · Chandelier, with her own animations.",
+            "es": "Nueva skin: Astra Yao · Chandelier, con sus propias animaciones.",
+            "zh": "新皮肤：耀嘉音 · Chandelier，带有专属动画。"
+          }
+        },
+        {
+          "type": "feature",
+          "text": {
+            "en": "Supporters in mainland China can now donate through Unifans with Alipay or WeChat Pay. Find it under Donate.",
+            "es": "Quienes apoyan desde China continental ahora pueden donar por Unifans con Alipay o WeChat Pay. Está en Donar.",
+            "zh": "中国大陆的支持者现在可以通过 Unifans 使用支付宝或微信支付赞助，入口在「赞助」中。"
+          }
+        }
+      ]
+    },
+    {
+      "id": "2026-11-23",
+      "date": "2026-11-23",
+      "items": [
+        {
+          "type": "character",
+          "text": {
+            "en": "New agent: Cissia.",
+            "es": "Nuevo agente: Cissia.",
+            "zh": "新代理人：Cissia。"
+          }
+        },
+        {
+          "type": "feature",
+          "text": {
+            "en": "With the animations panel open, the ↑ and ↓ keys jump to the previous or next clip, in the order the panel shows.",
+            "es": "Con el panel de animaciones abierto, las flechas ↑ y ↓ pasan al clip anterior o siguiente, en el orden que muestra el panel.",
+            "zh": "打开动画面板时，按 ↑ 和 ↓ 键可按面板中的顺序切换到上一个或下一个片段。"
+          }
+        },
+        {
+          "type": "fix",
+          "text": {
+            "en": "Locked camera: Smooth follow keeps tracking the character when you change clips or unlock it.",
+            "es": "Cámara bloqueada: el Seguimiento suave sigue al personaje al cambiar de clip o al desbloquearla.",
+            "zh": "锁定镜头：切换片段或解除锁定时，平滑跟随会继续跟住角色。"
+          }
+        },
+        {
+          "type": "feature",
+          "text": {
+            "en": "Import your own models: use the Import .glb button or drop a .glb on the viewer. A card shows its skeleton, animations, triangles and textures. The file stays on your device.",
+            "es": "Importá tus propios modelos: usá el botón Importar .glb o soltá un .glb sobre el visor. Una tarjeta muestra su esqueleto, animaciones, triángulos y texturas. El archivo queda en tu dispositivo.",
+            "zh": "导入你自己的模型：点击「导入 .glb」按钮，或将 .glb 文件拖到查看器上。信息卡会显示它的骨骼、动画、三角面和纹理。文件只保留在你的设备上。"
+          }
+        }
+      ]
+    },
+    {
+      "id": "2026-11-22-b",
+      "date": "2026-11-22",
+      "items": [
+        {
+          "type": "ui",
+          "text": {
+            "en": "Eous now drops by to let you know when there's something new.",
+            "es": "Eous ahora pasa a avisarte cuando hay novedades.",
+            "zh": "有新内容时，Eous 会跑来提醒你。"
+          }
+        },
+        {
+          "type": "feature",
+          "text": {
+            "en": "Favorite animations: star a clip to pin it at the top of the panel, saved per character.",
+            "es": "Animaciones favoritas: marcá un clip con la estrella para fijarlo arriba del panel, guardado por personaje.",
+            "zh": "收藏动画：点亮星标即可将片段固定在面板顶部，按角色分别保存。"
+          }
+        },
+        {
+          "type": "feature",
+          "text": {
+            "en": "The link now includes the playing animation, so you can share an exact clip.",
+            "es": "El enlace ahora incluye la animación que se reproduce, para compartir un clip exacto.",
+            "zh": "链接现在会包含正在播放的动画，方便分享指定片段。"
+          }
+        },
+        {
+          "type": "ui",
+          "text": {
+            "en": "Clearer animation panel in light theme and an easier-to-grab scrollbar.",
+            "es": "Panel de animaciones más legible en tema claro y barra de desplazamiento más fácil de agarrar.",
+            "zh": "浅色主题下的动画面板更清晰，滚动条也更容易拖动。"
+          }
+        },
+        {
+          "type": "feature",
+          "text": {
+            "en": "The viewer now speaks Simplified Chinese, and opens in your browser's language on your first visit.",
+            "es": "El visor ahora está en chino simplificado y, en tu primera visita, se abre en el idioma de tu navegador.",
+            "zh": "查看器现已支持简体中文，首次访问时会自动使用浏览器的语言。"
+          }
+        },
+        {
+          "type": "ui",
+          "text": {
+            "en": "Performance presets: Ultra by default at your monitor's refresh rate, plus Low-end PC and Minimal · battery for weaker devices.",
+            "es": "Presets de rendimiento: Ultra por defecto a la frecuencia de tu monitor, más PC de bajos recursos y Mínimo · batería para equipos modestos.",
+            "zh": "性能预设：默认「极致」并按显示器刷新率运行，另有「低配电脑」和「最低 · 省电」适合性能较弱的设备。"
+          }
+        },
+        {
+          "type": "feature",
+          "text": {
+            "en": "Seamless loops: the end of a clip now blends into its start. Adjust it with Loop smoothing in Viewer settings.",
+            "es": "Bucle sin cortes: el final del clip se funde con el inicio. Ajustalo con Suavizado del bucle en Ajustes del visor.",
+            "zh": "无缝循环：片段结尾会与开头平滑衔接。可在查看器设置的「循环平滑」中调整。"
+          }
+        },
+        {
+          "type": "feature",
+          "text": {
+            "en": "3D Pose: fingers can now be bent phalanx by phalanx for precise hand poses.",
+            "es": "Pose 3D: los dedos ahora se pueden doblar falange por falange para manos más precisas.",
+            "zh": "3D 姿势：现在可以逐个指节弯曲手指，摆出更精确的手势。"
+          }
+        },
+        {
+          "type": "character",
+          "text": {
+            "en": "New agents: Zhu Yuan and Lucy.",
+            "es": "Nuevos agentes: Zhu Yuan y Lucy.",
+            "zh": "新代理人：朱鸢和露西。"
+          }
+        },
+        {
+          "type": "fix",
+          "text": {
+            "en": "Character photos no longer go missing in the catalog after reloading the page.",
+            "es": "Las fotos de los personajes ya no desaparecen del catálogo al recargar la página.",
+            "zh": "修复了刷新页面后目录中角色头像丢失的问题。"
+          }
+        },
+        {
+          "type": "ui",
+          "text": {
+            "en": "The keyboard shortcuts guide now covers 3D Pose and the camera gestures.",
+            "es": "La guía de atajos ahora incluye Pose 3D y los gestos de cámara.",
+            "zh": "键盘快捷键指南新增了 3D 姿势和镜头手势。"
+          }
+        }
+      ]
+    }
+  ]
+}

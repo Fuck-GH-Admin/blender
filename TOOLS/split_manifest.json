@@ -1,0 +1,98 @@
+[
+ {
+  "path": "04_站点镜像/models/promeia/animations.glb",
+  "bytes": 111850872,
+  "sha256": "974a0872846cad02244e4fe67414821cd6329f06bd5078c595086c23dc666bab",
+  "parts": 2
+ },
+ {
+  "path": "04_站点镜像/models/sunna/animations.glb",
+  "bytes": 123703580,
+  "sha256": "60a37254505267034fcad568383805952b5b7cf710487d9dc9ea2265599165bb",
+  "parts": 2
+ },
+ {
+  "path": "04_站点镜像/models/aria/animations.glb",
+  "bytes": 123564728,
+  "sha256": "09956cb89fa9ed75b95126f0c7da0f9711c38862907e35cd7bdd7fa82bc60d3a",
+  "parts": 2
+ },
+ {
+  "path": "04_站点镜像/models/nangong-yu/animations.glb",
+  "bytes": 118516240,
+  "sha256": "9fa486c471f9f4b15398c92b3215826ebf8814030ea96aa0bc737adf6fc16f92",
+  "parts": 2
+ },
+ {
+  "path": "04_站点镜像/models/remielle/animations.glb",
+  "bytes": 229277984,
+  "sha256": "023941a1c589d8c8da760eb42ae06479f457baf7d3e9c688a7cc09ccb01f942b",
+  "parts": 3
+ },
+ {
+  "path": "04_站点镜像/models/janedoe/animations.glb",
+  "bytes": 102975376,
+  "sha256": "a93e6a5c88d85d93e60649ef53fc912aad337b4b5730b042e5c90dda09c9ab28",
+  "parts": 2
+ },
+ {
+  "path": "04_站点镜像/models/harumasa/animations.glb",
+  "bytes": 109231492,
+  "sha256": "74509fbbab3c2308b663f719b173f7d726633f0579ce69c1d489c13358e798d1",
+  "parts": 2
+ },
+ {
+  "path": "04_站点镜像/models/brujas/animations.glb",
+  "bytes": 113454972,
+  "sha256": "90833bac968c2dd6842dd8a4de1dbb4ce36342673980062ec6c9a6c0cf844cc7",
+  "parts": 2
+ },
+ {
+  "path": "04_站点镜像/models/yuzuha/animations.glb",
+  "bytes": 102888016,
+  "sha256": "69d7461d5a3305cab3fda32b7fd8611a58ec6b29e87fc48651d2b16253c36671",
+  "parts": 2
+ },
+ {
+  "path": "04_站点镜像/models/claret-original/animations.glb",
+  "bytes": 132313068,
+  "sha256": "11484d72dbf688fe573fb900f9aeb27a1b6eca5e0e3d8b23de9c4289e5027e32",
+  "parts": 2
+ },
+ {
+  "path": "04_站点镜像/models/yixuan/animations.glb",
+  "bytes": 109833576,
+  "sha256": "2ac17644aab38b35954beb889350c51713231043eea7c6886ff463ee836c1ee8",
+  "parts": 2
+ },
+ {
+  "path": "04_站点镜像/models/cissia/animations.glb",
+  "bytes": 135999592,
+  "sha256": "0f2b2ba97554fa11d7ba6508c96cdf2f88670d5c10b6f712ef0ba96e7a50ab3b",
+  "parts": 2
+ },
+ {
+  "path": "04_站点镜像/models/vivian/animations.glb",
+  "bytes": 135071900,
+  "sha256": "3fc9616a7fc994ed1cf54fc748cc74a22e4a79a7d3584be55e57bd154c432c60",
+  "parts": 2
+ },
+ {
+  "path": "04_站点镜像/models/rina/animations.glb",
+  "bytes": 101006140,
+  "sha256": "77ac07b2c1915ea3a21aa33a40b6890ca902b98f2e56239f2400d748438dc94e",
+  "parts": 2
+ },
+ {
+  "path": "04_站点镜像/models/astra/animations.glb",
+  "bytes": 107524644,
+  "sha256": "2b8a5f435904ce041363b9ea7e1d9d9753828d11c3c40f54c0b023903b083e8c",
+  "parts": 2
+ },
+ {
+  "path": "04_站点镜像/models/evelyn/animations.glb",
+  "bytes": 137096556,
+  "sha256": "3317b28b57f193355147a0c90e9e89e7124ebd5260896e172d30eb5428579461",
+  "parts": 2
+ }
+]

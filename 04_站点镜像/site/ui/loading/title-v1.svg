@@ -1,0 +1,241 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 320" width="1200" height="320" role="img" aria-label="ZZZ Studio - VHS Glitch y Fósforo CRT">
+  <defs>
+    <!-- Gradiente Lima Fosforescente de alto brillo -->
+    <linearGradient id="crt2-phosphor-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#EEFF8C" />
+      <stop offset="45%" stop-color="#CCFF1A" />
+      <stop offset="100%" stop-color="#9EFF00" />
+    </linearGradient>
+
+    <!-- Resplandor ambiental detrás de ZZZ -->
+    <radialGradient id="crt2-ambient-glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#A6FF00" stop-opacity="0.28" />
+      <stop offset="65%" stop-color="#7BFF00" stop-opacity="0.08" />
+      <stop offset="100%" stop-color="#7BFF00" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- Gradiente acento violeta superior derecho -->
+    <linearGradient id="crt2-purple-accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#6B5BFF" />
+      <stop offset="100%" stop-color="#A18BFF" />
+    </linearGradient>
+
+    <!-- Filtro de Fósforo CRT multicapa para ZZZ -->
+    <filter id="crt2-phosphor-bloom" x="-25%" y="-30%" width="150%" height="160%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="16" result="blurWide" />
+      <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="blurMid" />
+      <feColorMatrix in="blurWide" type="matrix" values="0.7 0 0 0 0.1
+                0 1.2 0 0 0.2
+                0 0 0.2 0 0
+                0 0 0 0.85 0" result="greenBloom" />
+      <feMerge>
+        <feMergeNode in="greenBloom" />
+        <feMergeNode in="blurMid" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+
+    <!-- Brillo CRT suave para STUDIO blanco y timecode -->
+    <filter id="crt2-white-glow" x="-15%" y="-25%" width="130%" height="150%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="3.5" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+
+    <!-- Brillo rojo para REC -->
+    <filter id="crt2-red-glow" x="-45%" y="-45%" width="190%" height="190%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+
+    <!-- Líneas de escaneo CRT más marcadas -->
+    <pattern id="crt2-scanlines" width="4" height="4" patternUnits="userSpaceOnUse">
+      <rect width="4" height="1.8" fill="#000000" fill-opacity="0.14" />
+    </pattern>
+
+    <!-- Patrón de franjas diagonales pequeñas -->
+    <pattern id="crt2-stripes" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
+      <rect width="2.5" height="6" fill="#2A3A0E" />
+    </pattern>
+
+    <!-- Letra Z industrial base -->
+    <path id="crt2-letter-z" d="M0,0 H155 V44 L62,142 H155 V186 H0 V142 L93,44 H0 Z" />
+
+    <!-- Grupo ZZZ -->
+    <g id="crt2-zzz-group">
+      <use href="#crt2-letter-z" transform="translate(88, 64) skewX(-11)" />
+      <use href="#crt2-letter-z" transform="translate(262, 64) skewX(-11)" />
+      <use href="#crt2-letter-z" transform="translate(436, 64) skewX(-11)" />
+    </g>
+
+    <!-- Grupo STUDIO vectorizado -->
+    <g id="crt2-studio-letters" transform="translate(654, 131) skewX(-11)">
+      <path d="M12,0 H70 V20 H22 V38 H58 L70,50 V84 L58,96 H0 V76 H48 V58 H12 L0,46 V12 Z" />
+      <path d="M84,0 H152 V20 H129 V96 H107 V20 H84 Z" />
+      <path d="M166,0 H188 V76 H214 V0 H236 V84 L224,96 H178 L166,84 Z" />
+      <path fill-rule="evenodd" d="M250,0 H306 L322,16 V80 L306,96 H250 Z M272,20 V76 H296 L300,72 V24 L296,20 Z" />
+      <path d="M336,0 H360 V96 H336 Z" />
+      <path fill-rule="evenodd" d="M388,0 H434 L448,14 V82 L434,96 H388 L374,82 V14 Z M400,20 H422 L426,24 V72 L422,76 H400 L396,72 V24 Z" />
+    </g>
+
+    <!-- Bandas de distorsión VHS tracking -->
+    <clipPath id="crt2-glitch-1">
+      <rect x="35" y="114" width="575" height="7" />
+    </clipPath>
+    <clipPath id="crt2-glitch-2">
+      <rect x="35" y="176" width="575" height="5" />
+    </clipPath>
+    <clipPath id="crt2-glitch-3">
+      <rect x="35" y="218" width="575" height="4" />
+    </clipPath>
+  </defs>
+
+  <!-- Fondo del panel HUD semitransparente para integrarse con el fondo del visor -->
+  <rect x="24" y="34" width="1152" height="252" rx="10" fill="#090B10" fill-opacity="0.32" />
+
+  <!-- Halo fosforescente proyectado sobre el panel oscuro -->
+  <ellipse cx="320" cy="158" rx="300" ry="125" fill="url(#crt2-ambient-glow)" />
+
+  <!-- Metadatos superiores -->
+  <g font-family="ui-monospace, &#39;Courier New&#39;, monospace" font-size="13" font-weight="700" letter-spacing="1.5" fill="#9AA0A8">
+    <polygon points="28,12 40,12 37,24 25,24" fill="#C4FF1A" />
+    <text x="48" y="23">DATABASE SYSTEM</text>
+    <path d="M192,12 L198,24 M201,12 L207,24 M210,12 L216,24" stroke="#626873" stroke-width="2" />
+  </g>
+
+  <!-- Pestaña técnica superior derecha -->
+  <polygon points="940,34 956,18 1140,18 1152,34" fill="url(#crt2-purple-accent)" fill-opacity="0.85" />
+  <path d="M1072,22 L1065,30 M1080,22 L1073,30 M1088,22 L1081,30 M1096,22 L1089,30 M1104,22 L1097,30" stroke="#090B10" stroke-width="2" />
+  <polygon points="1164,18 1176,18 1176,30" fill="#C4FF1A" />
+
+  <!-- Marco principal -->
+  <rect x="24" y="34" width="1152" height="252" rx="10" fill="none" stroke="#6C727F" stroke-width="1.5" />
+  <rect x="30" y="40" width="1140" height="240" rx="6" fill="none" stroke="#2D323D" stroke-width="1" />
+
+  <!-- Esquineros internos del marco -->
+  <g fill="none" stroke="#DCE2EA" stroke-width="2">
+    <path d="M38,60 V48 H50" />
+    <path d="M1150,48 H1162 V60" />
+    <path d="M38,260 V272 H50" />
+    <path d="M1150,272 H1162 V260" />
+  </g>
+  <rect x="18" y="218" width="3" height="44" fill="#C4FF1A" />
+  <rect x="1179" y="218" width="3" height="44" fill="#7D6BFF" />
+
+  <!-- === TÍTULO ZZZ CON FÓSFORO CRT Y VHS GLITCH === -->
+  <!-- Halo fosforescente + texto principal -->
+  <g filter="url(#crt2-phosphor-bloom)">
+    <use href="#crt2-zzz-group" x="-3" fill="#00F5D4" opacity="0.55" />
+    <use href="#crt2-zzz-group" fill="url(#crt2-phosphor-grad)" />
+  </g>
+
+  <!-- Slices horizontales de tracking VHS -->
+  <use href="#crt2-zzz-group" x="9" fill="#E8FF99" opacity="0.85" clip-path="url(#crt2-glitch-1)" />
+  <use href="#crt2-zzz-group" x="-8" fill="#00F5FF" opacity="0.6" clip-path="url(#crt2-glitch-2)" />
+  <use href="#crt2-zzz-group" x="6" fill="#C4FF1A" opacity="0.75" clip-path="url(#crt2-glitch-3)" />
+
+  <!-- Detalles stencil sutiles sobre el fósforo -->
+  <g fill="#2A3A0E" opacity="0.85">
+    <g transform="translate(88, 64) skewX(-11)">
+      <polygon points="18,154 29,174 7,174" />
+      <rect x="17" y="160" width="2" height="7" fill="#CCFF1A" />
+      <rect x="17" y="169" width="2" height="2" fill="#CCFF1A" />
+      <rect x="130" y="169" width="14" height="3" />
+    </g>
+    <g transform="translate(262, 64) skewX(-11)">
+      <polygon points="134,8 143,24 125,24" fill="none" stroke="#2A3A0E" stroke-width="2" />
+      <rect x="108" y="156" width="34" height="18" fill="url(#crt2-stripes)" />
+    </g>
+    <g transform="translate(436, 64) skewX(-11)">
+      <rect x="115" y="9" width="30" height="7" fill="url(#crt2-stripes)" />
+      <rect x="108" y="154" width="18" height="20" rx="2" />
+      <polygon points="117,158 122,169 112,169" fill="#CCFF1A" />
+      <rect x="130" y="154" width="18" height="20" rx="2" />
+      <circle cx="139" cy="164" r="4.5" fill="none" stroke="#CCFF1A" stroke-width="2" />
+    </g>
+  </g>
+
+  <!-- === BARRA SUPERIOR: REC + TIMECODE + ÍCONOS VHS === -->
+  <g>
+    <circle cx="628" cy="77" r="7" fill="#FF3B30" filter="url(#crt2-red-glow)" />
+    <text x="644" y="84" font-family="ui-monospace, &#39;Courier New&#39;, monospace" font-size="22" font-weight="700" letter-spacing="2" fill="#FF4B42">REC</text>
+
+    <!-- Código de tiempo VHS -->
+    <text x="774" y="84" font-family="ui-monospace, &#39;Courier New&#39;, monospace" font-size="23" font-weight="700" letter-spacing="2.5" fill="#E6EEF0" filter="url(#crt2-white-glow)">0:00:12:08</text>
+
+    <!-- Ícono antena -->
+    <g stroke="#C6CCD4" stroke-width="1.8" fill="none" stroke-linecap="round">
+      <circle cx="964" cy="72" r="2.2" fill="#C6CCD4" />
+      <line x1="964" y1="74" x2="964" y2="87" />
+      <path d="M959,68 A7,7 0 0,0 959,76" />
+      <path d="M969,68 A7,7 0 0,1 969,76" />
+      <path d="M955,65 A11,11 0 0,0 955,79" />
+      <path d="M973,65 A11,11 0 0,1 973,79" />
+    </g>
+
+    <!-- Barras de señal -->
+    <g fill="#C6CCD4">
+      <rect x="982" y="81" width="3.2" height="6" />
+      <rect x="988" y="77" width="3.2" height="10" />
+      <rect x="994" y="73" width="3.2" height="14" />
+      <rect x="1000" y="69" width="3.2" height="18" />
+      <rect x="1006" y="65" width="3.2" height="22" opacity="0.45" />
+    </g>
+
+    <!-- Fast-Forward -->
+    <g fill="#C6CCD4">
+      <polygon points="1020,68 1031,76 1020,84" />
+      <polygon points="1032,68 1043,76 1032,84" />
+    </g>
+
+    <!-- Ícono casete -->
+    <g transform="translate(1054, 67)">
+      <rect x="0" y="0" width="28" height="19" rx="2" fill="none" stroke="#C6CCD4" stroke-width="1.8" />
+      <circle cx="8.5" cy="9.5" r="3" fill="#C6CCD4" />
+      <circle cx="19.5" cy="9.5" r="3" fill="#C6CCD4" />
+      <line x1="8.5" y1="12.5" x2="19.5" y2="12.5" stroke="#C6CCD4" stroke-width="1.4" />
+    </g>
+
+    <!-- Insignia VHS -->
+    <g transform="translate(1092, 66)">
+      <rect x="0" y="0" width="48" height="21" rx="2" fill="none" stroke="#C6CCD4" stroke-width="1.8" />
+      <text x="24" y="15.5" text-anchor="middle" font-family="ui-monospace, &#39;Courier New&#39;, monospace" font-size="14" font-weight="800" letter-spacing="1" fill="#E6EBF2">VHS</text>
+    </g>
+  </g>
+
+  <!-- === MARCO OSCURO BROADCAST + STUDIO BLANCO BRILLANTE === -->
+  <polygon points="620,108 1145,108 1117,250 592,250" fill="#10141C" fill-opacity="0.42" stroke="#364234" stroke-width="1.2" />
+
+  <!-- Esquineros en verde lima neón -->
+  <g fill="none" stroke="#B8FF1A" stroke-width="3" stroke-linecap="square">
+    <!-- Superior izquierdo -->
+    <path d="M617,124 L620,108 L636,108" />
+    <!-- Superior derecho -->
+    <path d="M1129,108 L1145,108 L1142,124" />
+    <!-- Inferior izquierdo -->
+    <path d="M595,234 L592,250 L608,250" />
+    <!-- Inferior derecho -->
+    <path d="M1101,250 L1117,250 L1120,234" />
+  </g>
+
+  <!-- Letras STUDIO en blanco brillante -->
+  <use href="#crt2-studio-letters" fill="#FFFFFF" filter="url(#crt2-white-glow)" />
+
+  <!-- Capa global de líneas de escaneo CRT -->
+  <rect x="30" y="40" width="1140" height="240" rx="6" fill="url(#crt2-scanlines)" pointer-events="none" />
+
+  <!-- Metadatos inferiores -->
+  <g font-family="ui-monospace, &#39;Courier New&#39;, monospace" font-size="12" font-weight="700" letter-spacing="1.4" fill="#8C929B">
+    <polygon points="28,295 40,295 34,306" fill="#C4FF1A" />
+    <text x="48" y="305">DATABASE SYSTEM</text>
+
+    <path d="M976,294 L982,306 M984,294 L990,306 M992,294 L998,306 M1000,294 L1006,306 M1008,294 L1014,306" stroke="#5A606B" stroke-width="2" />
+    <text x="1024" y="305">AGENT ARCHIVE</text>
+    <polygon points="1146,295 1170,295 1166,305 1146,305" fill="#C4FF1A" fill-opacity="0.8" />
+  </g>
+</svg>
