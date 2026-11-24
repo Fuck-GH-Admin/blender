@@ -313,6 +313,7 @@ def main():
             results.append({"variant":name,"engine":engine,"path":path,"bytes":os.path.getsize(path)})
             if engine=="EEVEE" and name in ("pmx_tuned","glb_native_dn"):
                 blend=os.path.join(os.path.dirname(a.out),name+".blend")
+                bpy.ops.file.pack_all()
                 bpy.ops.wm.save_as_mainfile(filepath=blend)
                 print("BLEND_SAVED",blend,flush=True)
     with open(os.path.join(os.path.dirname(a.out),"results.json"),"w") as f:
