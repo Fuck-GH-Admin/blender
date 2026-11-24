@@ -104,11 +104,40 @@ def make_pbr(name, dpath=None, npath=None, rough=.5, metal=0.0, family="body", a
         im=bpy.data.images.load(npath,check_existing=True)
         try: im.colorspace_settings.name="Non-Color"
         except: pass
-        tex=nt.nodes.new("ShaderNodeTexImage"); tex.image=im; tex.location=(-470,-160)
-        nm=nt.nodes.new("ShaderNodeNormalMap"); nm.location=(-180,-150)
-        nm.inputs["Strength"].default_value=0.45
+        tex=nt.nodes.new("ShaderNodeTexImage"); tex.image=im; tex.location=(-900,-260)
         nt.links.new(uv.outputs["UV"],tex.inputs["Vector"])
-        nt.links.new(tex.outputs["Color"],nm.inputs["Color"])
+        # Contract says _LightTex stores only RG. Reconstruct Z before the tangent-space Normal Map node.
+        sep=nt.nodes.new("ShaderNodeSeparateColor"); sep.location=(-680,-260)
+        nt.links.new(tex.outputs["Color"],sep.inputs["Color"])
+        def mathn(op,a,b=None,x=-460,y=-260):
+            n=nt.nodes.new("ShaderNodeMath"); n.operation=op; n.location=(x,y)
+            if hasattr(a,"node"): nt.links.new(a,n.inputs[0])
+            else: n.inputs[0].default_value=float(a)
+            if b is not None:
+                if hasattr(b,"node"): nt.links.new(b,n.inputs[1])
+                else: n.inputs[1].default_value=float(b)
+            return n.outputs[0]
+        rx=mathn("MULTIPLY",sep.outputs["Red"],2.0,-460,-180)
+        gx=mathn("MULTIPLY",sep.outputs["Green"],2.0,-460,-340)
+        nx=mathn("SUBTRACT",rx,1.0,-260,-180)
+        ny=mathn("SUBTRACT",gx,1.0,-260,-340)
+        nx2=mathn("MULTIPLY",nx,nx,-60,-180)
+        ny2=mathn("MULTIPLY",ny,ny,-60,-340)
+        xy2=mathn("ADD",nx2,ny2,140,-240)
+        z2=mathn("SUBTRACT",1.0,xy2,320,-240)
+        z2c=mathn("MAXIMUM",z2,0.0,500,-240)
+        nz=mathn("SQRT",z2c, None,680,-240)
+        def enc01(v,x,y):
+            half=mathn("MULTIPLY",v,0.5,x,y)
+            return mathn("ADD",half,0.5,x+180,y)
+        comb=nt.nodes.new("ShaderNodeCombineColor"); comb.location=(1120,-240); comb.mode="RGB"
+        nt.links.new(enc01(nx,700,-80),comb.inputs["Red"])
+        nt.links.new(enc01(ny,700,-240),comb.inputs["Green"])
+        nt.links.new(enc01(nz,700,-400),comb.inputs["Blue"])
+        nm=nt.nodes.new("ShaderNodeNormalMap"); nm.location=(1340,-220)
+        nm.inputs["Strength"].default_value=1.0
+        if hasattr(nm,"uv_map"): nm.uv_map="UVMap"
+        nt.links.new(comb.outputs["Color"],nm.inputs["Color"])
         nt.links.new(nm.outputs["Normal"],bs.inputs["Normal"])
     try:
         if alpha<0.999: mat.surface_render_method="DITHERED"
