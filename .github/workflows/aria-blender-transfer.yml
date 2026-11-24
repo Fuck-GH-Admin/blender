@@ -1,0 +1,35 @@
+name: Blender resource transfer probe
+
+on:
+  push:
+    branches:
+      - ops/aria-blender-transfer-20261124
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create tiny transfer probe
+        shell: bash
+        run: |
+          mkdir -p probe
+          cat > probe/README.txt <<'EOF'
+          GitHub Actions artifact transfer probe
+          Repository: Fuck-GH-Admin/blender
+          Branch: ops/aria-blender-transfer-20261124
+          Purpose: verify GitHub connector artifact download -> local materialization.
+          EOF
+          printf 'transfer-probe-ok\n' > probe/status.txt
+          sha256sum probe/* > probe/SHA256SUMS.txt
+
+      - name: Upload probe artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: aria-blender-transfer-probe
+          path: probe/
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
