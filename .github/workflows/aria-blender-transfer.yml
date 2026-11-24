@@ -1,4 +1,4 @@
-name: Blender resource transfer probe
+name: Blender 5.3.0 + AriaIdol asset transfer
 
 on:
   push:
@@ -9,27 +9,123 @@ permissions:
   contents: read
 
 jobs:
-  probe:
+  assemble:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
-      - name: Create tiny transfer probe
+      - name: Sparse-fetch the AriaIdol research assets
         shell: bash
         run: |
-          mkdir -p probe
-          cat > probe/README.txt <<'EOF'
-          GitHub Actions artifact transfer probe
-          Repository: Fuck-GH-Admin/blender
-          Branch: ops/aria-blender-transfer-20261124
-          Purpose: verify GitHub connector artifact download -> local materialization.
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/aria"
+          git clone --filter=blob:none --depth 1 --no-checkout --single-branch --branch zzz-research-aria https://github.com/Fuck-GH-Admin/blender.git "$RUNNER_TEMP/aria/research"
+          cd "$RUNNER_TEMP/aria/research"
+          git sparse-checkout init --no-cone
+          cat > .git/info/sparse-checkout <<'EOF'
+          /README.md
+          /ARCHIVE.md
+          /01_分析报告/**
+          /02_着色器参考实现/**
+          /03_EEVEE_Cycles/**
+          /04_站点镜像/models/aria/model.glb
+          /04_站点镜像/contracts/00c580250fd8f42691f75cab6fbea3d5c45760f9f84bddc861e271ccbe152072.json
+          /04_站点镜像/textures/bfdb9e791be3424c6089d1b1.png
+          /04_站点镜像/textures/de5e635f3e2566278388cd10.png
+          /04_站点镜像/textures/6a01e7d258c2e42db3c291bd.png
+          /04_站点镜像/textures/d67dda28c4b043168e6e90b2.png
+          /04_站点镜像/textures/ff0664df1a27b7efcf66dc52.png
+          /04_站点镜像/textures/0a4253d6643bd4ce0b59eae5.png
+          /04_站点镜像/textures/20d4ce6fd9f8b6625c590fad.png
+          /04_站点镜像/textures/1b59e856f6b12a6aa582e2cb.png
+          /04_站点镜像/textures/cfa648a36d3e25711e2c20b7.png
+          /04_站点镜像/textures/d2ac7038b2161c778ff177ec.png
+          /04_站点镜像/textures/27f9f6ee21891fd682376faa.png
+          /04_站点镜像/textures/5b7706d30701638bacbd1a2c.png
+          /04_站点镜像/textures/197a541e531b7a39d3d656f3.png
+          /04_站点镜像/textures/bdde04d51cbf3be379ddae92.png
+          /04_站点镜像/textures/a908c4f5df44b80b847c5ec9.png
+          /04_站点镜像/textures/cbef875ce045eac4ba51f8fe.png
+          /04_站点镜像/textures/22a5d7ad64ac2ad453ec2fdc.png
+          /04_站点镜像/textures/f1fc1d0e3b0b8fb84c5de7d8.png
+          /04_站点镜像/textures/a009b1f00929664e25428a10.png
+          /04_站点镜像/textures/611b3bab773dad2e092a439d.png
+          /04_站点镜像/textures/3ebc7f51d59c938000cbbd8f.png
+          /05_官方模型/爱芮_人形_PMX_官模原包.zip
           EOF
-          printf 'transfer-probe-ok\n' > probe/status.txt
-          sha256sum probe/* > probe/SHA256SUMS.txt
+          git checkout zzz-research-aria
+          test -s "04_站点镜像/models/aria/model.glb"
+          test -s "04_站点镜像/contracts/00c580250fd8f42691f75cab6fbea3d5c45760f9f84bddc861e271ccbe152072.json"
+          test -s "05_官方模型/爱芮_人形_PMX_官模原包.zip"
+          echo "Research checkout complete: $(du -sh . | cut -f1)"
 
-      - name: Upload probe artifact
+      - name: Sparse-fetch and verify Blender 5.3.0 package
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none --depth 1 --no-checkout --single-branch --branch blender-5.3.0-package https://github.com/Fuck-GH-Admin/blender.git "$RUNNER_TEMP/aria/package"
+          cd "$RUNNER_TEMP/aria/package"
+          git sparse-checkout init --no-cone
+          cat > .git/info/sparse-checkout <<'EOF'
+          /README.md
+          /reassemble.py
+          /package/blender-5.3.0-linux-x64.tar.xz.part00
+          /package/blender-5.3.0-linux-x64.tar.xz.part01
+          /package/blender-5.3.0-linux-x64.tar.xz.part02
+          /package/blender-5.3.0-linux-x64.tar.xz.part03
+          /package/blender-5.3.0-linux-x64.tar.xz.part04
+          EOF
+          git checkout blender-5.3.0-package
+          python3 reassemble.py --verify
+          test "$(stat -c%s blender-5.3.0-linux-x64.tar.xz)" = "406944100"
+          sha256sum blender-5.3.0-linux-x64.tar.xz | grep -q "dacb8264197a3f7fda6001285a5a506fc97ee943881261c2c3bd63c882f22e05"
+
+      - name: Assemble minimal local-workspace bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          RESEARCH="$RUNNER_TEMP/aria/research"
+          PACKAGE="$RUNNER_TEMP/aria/package"
+          OUT="$RUNNER_TEMP/aria/bundle"
+          mkdir -p "$OUT/blender" "$OUT/repo"
+          cp "$PACKAGE/blender-5.3.0-linux-x64.tar.xz" "$OUT/blender/"
+          cp "$PACKAGE/README.md" "$OUT/blender/PACKAGE-README.md"
+          cp "$PACKAGE/reassemble.py" "$OUT/blender/reassemble.py"
+          cd "$RESEARCH"
+          cp README.md ARCHIVE.md "$OUT/repo/"
+          cp -a "01_分析报告" "02_着色器参考实现" "03_EEVEE_Cycles" "$OUT/repo/"
+          install -D "04_站点镜像/models/aria/model.glb" "$OUT/repo/04_站点镜像/models/aria/model.glb"
+          install -D "04_站点镜像/contracts/00c580250fd8f42691f75cab6fbea3d5c45760f9f84bddc861e271ccbe152072.json" "$OUT/repo/04_站点镜像/contracts/00c580250fd8f42691f75cab6fbea3d5c45760f9f84bddc861e271ccbe152072.json"
+          mkdir -p "$OUT/repo/04_站点镜像/textures"
+          for id in bfdb9e791be3424c6089d1b1 de5e635f3e2566278388cd10 6a01e7d258c2e42db3c291bd d67dda28c4b043168e6e90b2 ff0664df1a27b7efcf66dc52 0a4253d6643bd4ce0b59eae5 20d4ce6fd9f8b6625c590fad 1b59e856f6b12a6aa582e2cb cfa648a36d3e25711e2c20b7 d2ac7038b2161c778ff177ec 27f9f6ee21891fd682376faa 5b7706d30701638bacbd1a2c 197a541e531b7a39d3d656f3 bdde04d51cbf3be379ddae92 a908c4f5df44b80b847c5ec9 cbef875ce045eac4ba51f8fe 22a5d7ad64ac2ad453ec2fdc f1fc1d0e3b0b8fb84c5de7d8 a009b1f00929664e25428a10 611b3bab773dad2e092a439d 3ebc7f51d59c938000cbbd8f; do
+            test -s "04_站点镜像/textures/$id.png"
+            cp "04_站点镜像/textures/$id.png" "$OUT/repo/04_站点镜像/textures/"
+          done
+          install -D "05_官方模型/爱芮_人形_PMX_官模原包.zip" "$OUT/repo/05_官方模型/爱芮_人形_PMX_官模原包.zip"
+          cat > "$OUT/TRANSFER-README.md" <<'EOF'
+          # AriaIdol Blender local transfer bundle
+
+          Sources:
+          - Blender package branch: blender-5.3.0-package
+          - AriaIdol research branch: zzz-research-aria
+          - Blender 5.3.0 archive SHA-256: dacb8264197a3f7fda6001285a5a506fc97ee943881261c2c3bd63c882f22e05
+
+          Includes only the GLB model, its 21 contract-referenced textures, matching material contract,
+          PMX source archive, relevant EEVEE/Cycles scripts, shader reference implementation and analysis.
+          It intentionally excludes the unrelated ~590 MB texture corpus and other research assets.
+          PMX archive license terms remain applicable; this bundle is for the current local research workflow.
+          EOF
+          cd "$OUT"
+          find . -type f ! -name MANIFEST.sha256 -print0 | sort -z | xargs -0 sha256sum > MANIFEST.sha256
+          echo "Bundle files: $(find . -type f | wc -l)"
+          echo "Bundle size: $(du -sh . | cut -f1)"
+          echo "Blender archive SHA:"
+          sha256sum blender/blender-5.3.0-linux-x64.tar.xz
+
+      - name: Upload artifact for local materialization
         uses: actions/upload-artifact@v4
         with:
-          name: aria-blender-transfer-probe
-          path: probe/
+          name: aria-blender-inputs-${{ github.run_id }}
+          path: ${{ runner.temp }}/aria/bundle/
           if-no-files-found: error
-          retention-days: 1
+          retention-days: 3
           compression-level: 0
