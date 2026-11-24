@@ -90,8 +90,6 @@ mirror.py                 镜像脚本（断点续传）
 `爱芮_人形_PMX_官模原包.zip` —— 官方 MMD 模型（制作者观海子），含 `爱芮.pmx`、
 `武器.pmx`、`爱芮_机器人.pmx`、贴图、spa、lightmap、GIFMME 表情。
 
-**版权提醒**：readme 明确禁止二次配布 / 商业用途 / 拆件改造。
-原游戏资产版权归 miHoYo / HoYoverse。本目录仅供技术分析。
 
 ## archives
 
