@@ -147,7 +147,7 @@ jobs:
           - PMX base：保留 PMX 原漫反射贴图与原始顶点法线，统一 roughness 0.52。
           - PMX tuned：按头发、皮肤、眼睛、衣装和普通部位分别设置 roughness；皮肤加入很弱的 subsurface，头发加入受控 anisotropy / coat。
           - GLB imported：保留 glTF 导入的原始材质图和占位参数。
-          - GLB native D/N：用 contract 绑定的 D 贴图作为 Base Color；仅 body / hair 的 _LightTex 按 RG 法线贴图处理。Face / Eye 的 _LightTex 是 SDF 数据，不会错误接到 Normal 输入；M/A/MatCap 不在本轮猜测映射。
+          - GLB native D/N：用 contract 绑定的 D 贴图作为 Base Color；仅 body / hair 的 _LightTex 读取 RG，并按 contract / shader 参考实现重建 Z 后送入 Blender Tangent Normal Map。Face / Eye 的 _LightTex 是 SDF 数据，不会错误接到 Normal 输入。该 RG 重建在源报告中明确标注为社区适配、尚非视觉验收；M/A/MatCap 不在本轮猜测映射。
 
           ## PMX 限制
           髮+ 为 sphere_mode=2 的加算叠层，不等同于不透明 Principled 材质，本轮不纳入普通 PBR 网格。PMX 包 README 的非商业 / 禁止二次配布限制仍然适用；本包只用于当前研究对照。
