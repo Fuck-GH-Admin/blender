@@ -39,6 +39,7 @@ def image_stats(im, cache):
             seen+=1
         item["pixel_sample"]={"samples":seen,"mean":[v/seen for v in sums],
                               "min":mins,"max":maxs}
+        item["pixel_sha256"]=hashlib.sha256(buf.tobytes()).hexdigest()
     cache[im.name]=item
     return item
 
