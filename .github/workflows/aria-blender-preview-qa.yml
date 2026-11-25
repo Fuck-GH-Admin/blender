@@ -18,8 +18,8 @@ jobs:
       - name: Download the 1024x1536 preview artifact
         uses: actions/download-artifact@v4
         with:
-          name: aria-blender-preview-1024x1536-45547836098
-          run-id: 45547836098
+          name: aria-blender-preview-1024x1536-45554426717
+          run-id: 45554426717
           github-token: ${{ github.token }}
           repository: ${{ github.repository }}
           path: ${{ runner.temp }}/preview
@@ -41,6 +41,7 @@ jobs:
             "pmx_base_eevee.png","pmx_base_cycles.png",
             "pmx_tuned_eevee.png","pmx_tuned_cycles.png",
             "glb_imported_eevee.png","glb_imported_cycles.png",
+            "glb_uvfix_eevee.png","glb_uvfix_cycles.png",
             "glb_native_dn_eevee.png","glb_native_dn_cycles.png",
           ]
           records=[]
