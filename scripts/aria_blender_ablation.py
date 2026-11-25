@@ -345,30 +345,13 @@ def snapshot_glb(label, meshes):
         uv_info=[]
         for layer in obj.data.uv_layers:
             vals=[tuple(float(v) for v in item.uv) for item in layer.data]
-            if vals:
-                uv_info.append({
-                    "name":layer.name,"loops":len(vals),
-                    "min":[min(v[i] for v in vals) for i in range(2)],
-                    "max":[max(v[i] for v in vals) for i in range(2)]
-                })
-            else: uv_info.append({"name":layer.name,"loops":0})
-        color_attrs=[]
-        for attr in getattr(obj.data,"color_attributes",[]):
-            count=len(attr.data); samples=[]
-            if count:
-                step=max(1,count//512)
-                for ix in range(0,count,step):
-                    try: samples.append([float(v) for v in attr.data[ix].color])
-                    except Exception: pass
-            if samples:
-                color_attrs.append({
-                    "name":attr.name,"domain":attr.domain,"data_type":attr.data_type,"count":count,
-                    "sample_mean":[sum(v[i] for v in samples)/len(samples) for i in range(4)],
-                    "sample_min":[min(v[i] for v in samples) for i in range(4)],
-                    "sample_max":[max(v[i] for v in samples) for i in range(4)]
-                })
-            else:
-                color_attrs.append({"name":attr.name,"domain":attr.domain,"data_type":attr.data_type,"count":count})
+            uv_info.append({
+                "name":layer.name,"loops":len(vals),
+                "min":[min(v[i] for v in vals) for i in range(2)] if vals else None,
+                "max":[max(v[i] for v in vals) for i in range(2)] if vals else None
+            })
+        color_attrs=[{"name":a.name,"domain":a.domain,"data_type":a.data_type,"count":len(a.data)}
+                     for a in getattr(obj.data,"color_attributes",[])]
         objects.append({
             "name":obj.name,"vertices":len(obj.data.vertices),"polygons":len(obj.data.polygons),
             "materials":slot_names,"polygon_material_counts":poly_counts,
@@ -392,27 +375,14 @@ def snapshot_glb(label, meshes):
                     if node.type=="TEX_IMAGE":
                         im=node.image
                         nd["image"]=None if im is None else {
-                            "name":im.name,"filepath":im.filepath,
-                            "size":list(im.size),"channels":im.channels,
-                            "colorspace":im.colorspace_settings.name,
-                            "alpha_mode":str(im.alpha_mode),"has_data":im.has_data,
-                            "pixel_sample":None
+                            "name":im.name,"filepath":im.filepath,"size":list(im.size),
+                            "channels":im.channels,"colorspace":im.colorspace_settings.name,
+                            "alpha_mode":str(im.alpha_mode),"has_data":im.has_data
                         }
-                        if im is not None and im.has_data and im.size[0]>0 and im.size[1]>0:
-                            npx=im.size[0]*im.size[1]; channels=max(1,im.channels)
-                            step=max(1,npx//2048); sums=[0.0]*min(4,channels)
-                            mins=[1e9]*len(sums); maxs=[-1e9]*len(sums); seen=0
-                            px=im.pixels
-                            for pix in range(0,npx,step):
-                                base=pix*channels
-                                for ci in range(len(sums)):
-                                    val=float(px[base+ci]); sums[ci]+=val
-                                    mins[ci]=min(mins[ci],val); maxs[ci]=max(maxs[ci],val)
-                                seen+=1
-                            nd["image"]["pixel_sample"]={
-                                "samples":seen,"mean":[v/seen for v in sums],
-                                "min":mins,"max":maxs
-                            }
+                        vec=node.inputs.get("Vector")
+                        if vec is not None:
+                            nd["vector"]={"linked":vec.is_linked,
+                                "from":[l.from_node.name+":"+l.from_socket.name for l in vec.links]}
                     if node.type=="BSDF_PRINCIPLED":
                         nd["inputs"]={}
                         for socket_name in ("Base Color","Alpha","Roughness","Metallic","Normal"):
@@ -428,9 +398,7 @@ def snapshot_glb(label, meshes):
                             "data_type":str(getattr(node,"data_type",None)),
                             "blend_type":str(getattr(node,"blend_type",None)),
                             "operation":str(getattr(node,"operation",None)),
-                            "attribute_name":str(getattr(node,"attribute_name",None)),
-                            "clamp_factor":getattr(node,"clamp_factor",None),
-                            "clamp_result":getattr(node,"clamp_result",None)
+                            "attribute_name":str(getattr(node,"attribute_name",None))
                         }
                         nd["inputs"]=[]
                         for sock in node.inputs:
@@ -454,7 +422,7 @@ def snapshot_glb(label, meshes):
     print("GLB_IMPORT_DIAGNOSTICS_"+label.upper(),json.dumps(snap,ensure_ascii=False),flush=True)
     return snap
 
-def build_glb(glb_path,contract_path,textures_dir,tuned,width,height):
+def build_glb(glb_path,contract_path,textures_dir,mode,width,height):
     bpy.ops.wm.read_factory_settings(use_empty=True)
     bpy.ops.import_scene.gltf(filepath=glb_path)
     for name in ("Cube","Icosphere","Camera","Light"):
@@ -462,8 +430,8 @@ def build_glb(glb_path,contract_path,textures_dir,tuned,width,height):
         if o: bpy.data.objects.remove(o,do_unlink=True)
     sc=bpy.context.scene
     meshes=[o for o in sc.objects if o.type=="MESH"]
-    if not tuned:
-        snapshot_glb("imported_before_state_fix",meshes)
+    if mode=="raw":
+        snapshot_glb("raw_glb_import",meshes)
     # Character-only comparison: the PMX input is 爱芮.pmx (not 武器.pmx),
     # so remove GLB weapon / FX / stencil-shadow meshes before measuring bounds.
     excluded=[]
@@ -478,27 +446,63 @@ def build_glb(glb_path,contract_path,textures_dir,tuned,width,height):
     else: scale=None
     print("GLB_GEOMETRY",len(meshes),sum(len(o.data.vertices) for o in meshes),
           sum(len(o.data.polygons) for o in meshes),"scale",scale,flush=True)
-    if not tuned:
-        # The exported contract records opaque queue / alphaClip=0 / Cull=0 for the
-        # character surfaces. glTF import may preserve texture-alpha blending and
-        # single-sided culling that are not the source render state; restore the
-        # contract's opaque, double-sided state while leaving imported PBR factors intact.
+
+    contract=json.load(open(contract_path,encoding="utf-8"))
+    bymat={}
+    for surf in contract["surfaces"]:
+        bymat.setdefault(surf["materialName"],surf)
+
+    if mode=="uvfix":
+        # The imported GLB has valid UVMap layers, but its Image Texture Vector
+        # sockets are unlinked. Blender therefore falls back to Generated coords.
+        # Reconnect the exported D textures to UV0, then apply the contract's
+        # per-material render state instead of blanket BLENDED / Cull-Off.
         for mat in bpy.data.materials:
-            mat.use_backface_culling=False
-            if mat.use_nodes:
-                for node in mat.node_tree.nodes:
-                    if node.type=="BSDF_PRINCIPLED":
-                        alpha=node.inputs.get("Alpha")
-                        if alpha is not None:
-                            for link in list(alpha.links):
-                                mat.node_tree.links.remove(link)
-                            alpha.default_value=1.0
-            print("GLB_IMPORTED_STATE_FIX",mat.name,"double_sided=True","opaque=True",flush=True)
-        snapshot_glb("imported_after_state_fix",meshes)
-    if tuned:
-        contract=json.load(open(contract_path,encoding="utf-8"))
-        bymat={}
-        for s in contract["surfaces"]: bymat.setdefault(s["materialName"],s)
+            surf=bymat.get(mat.name)
+            if not surf or not mat.use_nodes: continue
+            texcoord=None
+            for node in mat.node_tree.nodes:
+                if node.type=="TEX_IMAGE":
+                    vector=node.inputs.get("Vector")
+                    if vector is not None and not vector.is_linked:
+                        if texcoord is None:
+                            texcoord=mat.node_tree.nodes.new("ShaderNodeTexCoord")
+                            texcoord.name="Contract_UV0"
+                            texcoord.label="Contract UV0"
+                        mat.node_tree.links.new(texcoord.outputs["UV"],vector)
+            state=surf.get("capabilities",{}).get("sourceState",{})
+            cull=state.get("Cull")
+            if cull==0: mat.use_backface_culling=False
+            elif cull==2: mat.use_backface_culling=True
+            queue=state.get("queue")
+            try:
+                if queue=="opaque": mat.surface_render_method="DITHERED"
+                elif queue=="blended": mat.surface_render_method="BLENDED"
+            except Exception: pass
+            family=surf.get("family","body")
+            low=mat.name.lower()
+            rough=.48
+            if "skirt" in low: rough=.46
+            elif family=="hair": rough=.29
+            elif family=="face-sdf": rough=.58
+            elif family=="eyes": rough=.20
+            for node in mat.node_tree.nodes:
+                if node.type!="BSDF_PRINCIPLED": continue
+                metal=node.inputs.get("Metallic")
+                rough_socket=node.inputs.get("Roughness")
+                alpha=node.inputs.get("Alpha")
+                # GLB metallicFactor=1 and roughnessFactor=0.5527864 are exporter
+                # fallback values; source M map carries the actual metal/spec masks.
+                if metal is not None: metal.default_value=0.0
+                if rough_socket is not None: rough_socket.default_value=rough
+                if queue=="opaque" and alpha is not None:
+                    for link in list(alpha.links): mat.node_tree.links.remove(link)
+                    alpha.default_value=1.0
+            print("GLB_UV_STATE_FIX",mat.name,"queue",queue,"Cull",cull,
+                  "UV0_relinked",bool(texcoord),"metallic_fallback=0",flush=True)
+        snapshot_glb("uv0_and_contract_state_repaired",meshes)
+
+    if mode=="native":
         replacements={}
         for old in list(bpy.data.materials):
             surf=bymat.get(old.name)
@@ -525,13 +529,15 @@ def build_glb(glb_path,contract_path,textures_dir,tuned,width,height):
         snapshot_glb("native_dn_after_replacement",meshes)
     return setup_scene(width,height)
 
+
 def main():
     a=args_after_dashes(); os.makedirs(a.out,exist_ok=True)
     variants=[
         ("pmx_base",lambda:build_pmx(a.pmx,False,a.width,a.height)),
         ("pmx_tuned",lambda:build_pmx(a.pmx,True,a.width,a.height)),
-        ("glb_imported",lambda:build_glb(a.glb,a.contract,a.textures,False,a.width,a.height)),
-        ("glb_native_dn",lambda:build_glb(a.glb,a.contract,a.textures,True,a.width,a.height)),
+        ("glb_imported",lambda:build_glb(a.glb,a.contract,a.textures,"raw",a.width,a.height)),
+        ("glb_uvfix",lambda:build_glb(a.glb,a.contract,a.textures,"uvfix",a.width,a.height)),
+        ("glb_native_dn",lambda:build_glb(a.glb,a.contract,a.textures,"native",a.width,a.height)),
     ]
     results=[]
     for name,builder in variants:
@@ -540,7 +546,7 @@ def main():
             sc=builder()
             path=render_one(sc,name,engine,a.out)
             results.append({"variant":name,"engine":engine,"path":path,"bytes":os.path.getsize(path)})
-            if engine=="EEVEE" and name in ("pmx_tuned","glb_native_dn"):
+            if engine=="EEVEE" and name in ("pmx_tuned","glb_uvfix","glb_native_dn"):
                 blend=os.path.join(os.path.dirname(a.out),name+".blend")
                 bpy.ops.file.pack_all()
                 bpy.ops.wm.save_as_mainfile(filepath=blend)
