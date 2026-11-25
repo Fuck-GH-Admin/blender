@@ -1,0 +1,107 @@
+name: AriaIdol real-model EEVEE toon preview
+
+on:
+  push:
+    branches:
+      - ops/aria-blender-transfer-20261124
+    paths:
+      - ".github/workflows/aria-toon-preview.yml"
+      - "scripts/aria_toon_preview.py"
+      - "scripts/aria_blender_ablation.py"
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  toon-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout toon and base render scripts
+        uses: actions/checkout@v4
+        with:
+          ref: ops/aria-blender-transfer-20261124
+          fetch-depth: 1
+          sparse-checkout: |
+            scripts/aria_toon_preview.py
+            scripts/aria_blender_ablation.py
+          sparse-checkout-cone-mode: false
+
+      - name: Download verified Blender and AriaIdol inputs
+        uses: actions/download-artifact@v4
+        with:
+          name: aria-blender-inputs-45411674206
+          run-id: 45411674206
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          path: ${{ runner.temp }}/aria-inputs
+
+      - name: Install Blender runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            libx11-6 libxrender1 libxfixes3 libxi6 libxkbcommon0 libsm6 libice6 \
+            libxext6 libgl1 libglx-mesa0 libegl1 libgl1-mesa-dri libxrandr2 \
+            libxxf86vm1 libxcursor1 libxinerama1 libwayland-client0 libdecor-0-0 \
+            xz-utils unzip
+          mkdir -p "${{ runner.temp }}/blender"
+          tar -xf "${{ runner.temp }}/aria-inputs/blender/blender-5.3.0-linux-x64.tar.xz" -C "${{ runner.temp }}/blender"
+          BLENDER="$(find "${{ runner.temp }}/blender" -type f -name blender -perm -111 | head -1)"
+          test -x "$BLENDER"
+          if ldd "$BLENDER" | grep "not found"; then exit 1; fi
+          echo "BLENDER=$BLENDER" >> "$GITHUB_ENV"
+          "$BLENDER" --version | head -5
+
+      - name: Render the real GLB with contract-driven five-region toon shading
+        shell: bash
+        run: |
+          set -euo pipefail
+          INPUTS="${{ runner.temp }}/aria-inputs"
+          GLB="$INPUTS/repo/04_站点镜像/models/aria/model.glb"
+          CONTRACT="$INPUTS/repo/04_站点镜像/contracts/00c580250fd8f42691f75cab6fbea3d5c45760f9f84bddc861e271ccbe152072.json"
+          TEXTURES="$INPUTS/repo/04_站点镜像/textures"
+          OUT="$GITHUB_WORKSPACE/aria-toon-preview"
+          mkdir -p "$OUT"
+          test -s "$GLB"; test -s "$CONTRACT"
+          "$BLENDER" -b -t 4 --python-exit-code 1 \
+            --python scripts/aria_toon_preview.py -- \
+            --glb "$GLB" --contract "$CONTRACT" --textures "$TEXTURES" \
+            --outdir "$OUT" --width 1024 --height 1536 \
+            2>&1 | tee "$OUT/blender-toon.log"
+          python3 - "$OUT/aria_toon_eevee_5region.png" "$OUT/materials_report.json" <<'PY'
+          from PIL import Image, ImageStat
+          import json, os, sys
+          p=sys.argv[1]; report=sys.argv[2]
+          im=Image.open(p).convert("RGB")
+          if im.size!=(1024,1536): raise SystemExit("bad render dimensions "+str(im.size))
+          stat=ImageStat.Stat(im.resize((128,192)))
+          if os.path.getsize(p)<10000 or max(stat.stddev)<3: raise SystemExit("blank / corrupt render")
+          data=json.load(open(report,encoding="utf-8"))
+          toon=sum(x["mode"]=="toon_eevee_5region" for x in data)
+          pbr=sum(x["mode"]=="pbr_fallback_face_or_eyes" for x in data)
+          print("TOON_VALIDATION",json.dumps({"size":im.size,"bytes":os.path.getsize(p),
+              "sample_stddev_rgb":stat.stddev,"toon_material_slots":toon,"pbr_fallback_slots":pbr},ensure_ascii=False))
+          PY
+          (cd "$OUT" && sha256sum *.png *.blend *.json *.log > SHA256SUMS.txt)
+          zip -qr aria-toon-preview.zip "$OUT"
+          unzip -t aria-toon-preview.zip | tail -2
+          sha256sum aria-toon-preview.zip
+          ls -lh "$OUT"/* aria-toon-preview.zip
+
+      - name: Upload EEVEE toon preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: aria-toon-preview-${{ github.run_id }}
+          path: |
+            aria-toon-preview.zip
+            aria-toon-preview/aria_toon_eevee_5region.png
+            aria-toon-preview/aria_toon_eevee_5region.blend
+            aria-toon-preview/materials_report.json
+            aria-toon-preview/SHA256SUMS.txt
+            aria-toon-preview/blender-toon.log
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
