@@ -1,0 +1,28 @@
+name: Cleanup PMX-bearing temporary render artifacts
+
+on:
+  push:
+    branches:
+      - ops/aria-blender-transfer-20261124
+    paths:
+      - ".github/workflows/aria-artifact-cleanup.yml"
+
+permissions:
+  actions: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete superseded temporary artifacts containing embedded PMX geometry
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for id in 14990528053 14990444009 14990752870 14991457200; do
+            echo "Deleting temporary artifact $id"
+            gh api --method DELETE "/repos/$REPO/actions/artifacts/$id"
+          done
+          echo "PMX-bearing temporary artifacts deleted."
