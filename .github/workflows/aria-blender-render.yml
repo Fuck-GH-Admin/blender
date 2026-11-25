@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - ops/aria-blender-transfer-20261124
+    paths:
+      - ".github/workflows/aria-blender-render.yml"
+      - "scripts/aria_blender_ablation.py"
 
 permissions:
   contents: read
@@ -12,7 +15,7 @@ permissions:
 jobs:
   render:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - name: Checkout isolated transfer branch
         uses: actions/checkout@v4
@@ -79,17 +82,17 @@ jobs:
             --python-exit-code 1 \
             --python scripts/aria_blender_ablation.py -- \
             --pmx "$PMX_FILE" --glb "$GLB" --contract "$CONTRACT" \
-            --textures "$TEXTURES" --out "$OUT"
+            --textures "$TEXTURES" --out "$OUT" --width 1024 --height 1536 2>&1 | tee "$OUT/blender-render.log"
           ls -lh "$OUT"
 
-      - name: Create comparison sheets and experiment notes
+      - name: Validate eight independent preview renders and create gallery
         shell: bash
         run: |
           set -euo pipefail
           OUT="$GITHUB_WORKSPACE/aria-ablation-out"
           python3 - "$OUT" <<'PY'
-          from PIL import Image, ImageDraw, ImageFont
-          import os, sys, json
+          from PIL import Image, ImageStat
+          import os, sys, json, html
           out=sys.argv[1]
           variants=[
             ("pmx_base","PMX 基础材质"),
@@ -98,86 +101,114 @@ jobs:
             ("glb_native_dn","GLB 原生 D/N + 分部位材质"),
           ]
           engines=["eevee","cycles"]
-          w,h,lh,gap,margin=384,576,36,18,24
-          font=ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",17)
-          for mode in ("all","eevee","cycles"):
-            cols=2 if mode=="all" else 1
-            c=Image.new("RGB",(margin*2+cols*w+(cols-1)*gap,
-                               margin*2+4*(h+lh)+3*gap),(27,30,37))
-            d=ImageDraw.Draw(c)
-            for ri,(key,label) in enumerate(variants):
-              for ci,e in enumerate(engines if mode=="all" else [mode]):
-                p=os.path.join(out,key+"_"+e+".png")
-                im=Image.open(p).convert("RGB")
-                x=margin+ci*(w+gap); y=margin+ri*(h+lh+gap)
-                c.paste(im,(x,y+lh))
-                d.text((x,y+8),label+" | "+e.upper(),font=font,fill=(240,242,247))
-            c.save(os.path.join(out,"contact_"+mode+".png"),optimize=True)
-          metrics=[]
+          expected=(1024,1536)
+          records=[]
+          cards=[]
           for key,label in variants:
-            for e in engines:
-              p=os.path.join(out,key+"_"+e+".png")
-              im=Image.open(p).convert("RGB")
-              metrics.append({"file":os.path.basename(p),"bytes":os.path.getsize(p),"dimensions":im.size})
-          json.dump(metrics,open(os.path.join(out,"image_metrics.json"),"w"),ensure_ascii=False,indent=2)
+            for engine in engines:
+              name=f"{key}_{engine}.png"
+              path=os.path.join(out,name)
+              if not os.path.isfile(path):
+                raise SystemExit(f"MISSING_RENDER: {name}")
+              im=Image.open(path)
+              im.verify()
+              im=Image.open(path).convert("RGB")
+              if im.size != expected:
+                raise SystemExit(f"BAD_DIMENSIONS: {name}: {im.size}, expected {expected}")
+              sample=im.resize((128,192))
+              stat=ImageStat.Stat(sample)
+              colors=sample.getcolors(maxcolors=30000)
+              color_count=len(colors) if colors is not None else 30000
+              stddev=[round(v,2) for v in stat.stddev]
+              if os.path.getsize(path)<10000 or color_count<100 or max(stddev)<3:
+                raise SystemExit(f"LIKELY_BLANK_OR_CORRUPT: {name}")
+              records.append({
+                "file":name,"variant":key,"label":label,"engine":engine,
+                "width":im.width,"height":im.height,"bytes":os.path.getsize(path),
+                "sample_unique_colors":color_count,"sample_stddev_rgb":stddev
+              })
+              cards.append(
+                '<section><h2>'+html.escape(label)+' · '+engine.upper()+'</h2>'
+                '<p>'+html.escape(name)+' · 1024 × 1536</p>'
+                '<a href="'+html.escape(name)+'"><img src="'+html.escape(name)+'" '
+                'alt="'+html.escape(label)+' '+engine.upper()+'"></a></section>'
+              )
+          if len(records)!=8:
+            raise SystemExit(f"Expected 8 renders, got {len(records)}")
+          with open(os.path.join(out,"render_validation.json"),"w",encoding="utf-8") as f:
+            json.dump(records,f,ensure_ascii=False,indent=2)
+          page='''<!doctype html><html lang="zh-CN"><meta charset="utf-8">
+          <meta name="viewport" content="width=device-width,initial-scale=1">
+          <title>AriaIdol · 1024×1536 Preview</title>
+          <style>body{margin:24px auto;padding:0 18px;max-width:1120px;background:#171b22;color:#edf1f7;font:16px system-ui}
+          section{margin:28px 0 48px}img{display:block;width:100%;height:auto;border:1px solid #454d59;border-radius:8px}
+          a{color:#9bc8ff}small{color:#aab3c0}</style>
+          <h1>AriaIdol Blender 预检图 · 1024×1536</h1>
+          <p>八张独立原图。不要用拼图判断细节；点击图片可单独打开原始 PNG。</p>
+          '''+''.join(cards)+'''</html>'''
+          with open(os.path.join(out,"index.html"),"w",encoding="utf-8") as f:
+            f.write(page)
+          print(json.dumps(records,ensure_ascii=False,indent=2))
           PY
           cp scripts/aria_blender_ablation.py "$OUT/"
           cp "$GITHUB_WORKSPACE/pmx_tuned.blend" "$OUT/"
           cp "$GITHUB_WORKSPACE/glb_native_dn.blend" "$OUT/"
-          cat > "$OUT/实验说明_中文.md" <<'MD'
-          # 爱芮 Blender 原生渲染消融实验 · 八张对照图
+          cat > "$OUT/实验说明_中文.md" <<'MD"
+          # 爱芮 Blender 预检 · 八张独立原图（1024×1536）
 
-          本轮复现四种模型 / 材质条件，每种分别用 Blender 原生 EEVEE 与 Cycles 渲染。
+          本轮只做人物 / 模型完整性与明显材质 bug 预检，不是最终 2K 成片。用户确认保留的方案才进入 2048×3072 或更高分辨率正式渲染。
 
-          | 条件 | EEVEE | Cycles |
-          |---|---|---|
-          | PMX 基础材质 | pmx_base_eevee.png | pmx_base_cycles.png |
-          | PMX 分部位材质 | pmx_tuned_eevee.png | pmx_tuned_cycles.png |
-          | GLB 原始导入材质 | glb_imported_eevee.png | glb_imported_cycles.png |
-          | GLB 原生 D/N + 分部位材质 | glb_native_dn_eevee.png | glb_native_dn_cycles.png |
+          ## 八个方案
+          | 方案 | 引擎 |
+          |---|---|
+          | PMX 基础材质 | EEVEE / Cycles |
+          | PMX 分部位材质 | EEVEE / Cycles |
+          | GLB 原始导入材质 | EEVEE / Cycles |
+          | GLB 原生 D/N + 分部位材质 | EEVEE / Cycles |
 
-          ## 固定条件
-          - Blender 5.3.0；只用内置 EEVEE / Cycles 与 Principled BSDF。
-          - 统一相机、构图、三盏面积灯、World 填充光、地面。
-          - 384×576；Standard 色彩管理；EV=0。
-          - EEVEE 8 TAA samples；Cycles 8 CPU samples + denoise。
-          - 两个模型都归一到 1.70 Blender units 高。
+          每张图单独输出为 PNG；不以缩小联系图替代原图。打开 `index.html` 可逐张查看。
 
-          ## 材质处理
-          - PMX base：保留 PMX 原漫反射贴图与原始顶点法线，统一 roughness 0.52。
-          - PMX tuned：按头发、皮肤、眼睛、衣装和普通部位分别设置 roughness；皮肤加入很弱的 subsurface，头发加入受控 anisotropy / coat。
-          - GLB imported：保留 glTF 导入的原始材质图和占位参数。
-          - GLB native D/N：用 contract 绑定的 D 贴图作为 Base Color；仅 body / hair 的 _LightTex 读取 RG，并按 contract / shader 参考实现重建 Z 后送入 Blender Tangent Normal Map。Face / Eye 的 _LightTex 是 SDF 数据，不会错误接到 Normal 输入。该 RG 重建在源报告中明确标注为社区适配、尚非视觉验收；M/A/MatCap 不在本轮猜测映射。
+          ## 灯光依据与边界
+          研究报告实测网页使用两盏 DirectionalLight、AmbientLight、HemisphereLight，没有环境贴图；UI 默认主光方位角 38.7°、仰角 47.6°，曝光 0.9。本轮把主方向光与曝光按该默认值近似映射到 Blender，并用 World 节点渐变近似半球环境。
+          第二盏方向光的具体方向 / 能量未从报告中恢复，因此使用低能量辅助方向光作为明确标注的近似值，不声称是游戏原值。Blender SUN 能量和网页 lightingIntensity 不是同一量纲。
+          本轮仍是 Principled 材质路线的基线对照，不等于完整复刻游戏的 5-Pass / Toon / SDF / MatCap 渲染管线。
 
-          ## PMX 限制
-          髮+ 为 sphere_mode=2 的加算叠层，不等同于不透明 Principled 材质，本轮不纳入普通 PBR 网格。PMX 包 README 的非商业 / 禁止二次配布限制仍然适用；本包只用于当前研究对照。
+          ## 模型 / 材质处理
+          - PMX：保留漫反射贴图和原始顶点法线；材质 diffuse.a 决定透明；髮+ 的 sphere_mode=2 加算叠层本轮排除，不能伪装成普通不透明 PBR。
+          - GLB：保留导入材质作为基线；原生 D/N 方案按契约绑定 D 贴图；仅 body / hair 的 _LightTex 作为 RG 法线并重建 Z；face-sdf / eyes 的 _LightTex 是 SDF 数据，不接到 Normal 输入。
+          - M/A/MatCap 不在本轮猜测映射。GLB 的面部 SDF、发影 stencil、描边壳尚未完整进入 Principled 基线。
 
-          ## 解释边界
-          本轮固定 EV=0 与灯光，先比较模型 / 贴图 / 材质 / 引擎差异。网页端记录的曝光 0.9、灯光强度 1、Toon 阴影强度 0.72、Rim 强度 10 是后续校准参考，不代表 Blender 中可直接一一等价的参数。
+          ## 渲染环境
+          Blender 5.3.0；EEVEE 通过 Xvfb + Mesa llvmpipe 软件 OpenGL；Cycles CPU 8 samples + denoise；无物理 GPU。
+          PNG 尺寸必须为 1024×1536。工作流会检查八张图是否存在、尺寸正确、文件非空并计算基本颜色统计；这不是自动视觉验收。
           MD
           cat > "$OUT/ENVIRONMENT.txt" <<TXT
           Blender 5.3.0
           Runner: GitHub Actions ubuntu-latest
+          Resolution: 1024 x 1536 (individual preview PNGs)
           EEVEE backend: Mesa llvmpipe software OpenGL under Xvfb
           Cycles: CPU, 8 samples, denoising enabled
+          Website measured defaults used as Blender approximations: primary sun azimuth 38.7 deg, elevation 47.6 deg, exposure 0.9
+          Secondary directional fill is provisional; exact source vector/intensity unavailable
           No physical GPU used
           TXT
-          (cd "$OUT" && sha256sum *.png *.blend *.py *.json *.md *.txt > SHA256SUMS.txt)
+          (cd "$OUT" && sha256sum *.png *.blend *.py *.json *.md *.txt *.html > SHA256SUMS.txt)
           cd "$GITHUB_WORKSPACE"
-          zip -qr aria-blender-ablation-8renders.zip aria-ablation-out
-          unzip -t aria-blender-ablation-8renders.zip | tail -2
-          sha256sum aria-blender-ablation-8renders.zip
-          ls -lh aria-blender-ablation-8renders.zip
+          zip -qr aria-blender-preview-1024x1536.zip aria-ablation-out
+          unzip -t aria-blender-preview-1024x1536.zip | tail -2
+          sha256sum aria-blender-preview-1024x1536.zip
+          ls -lh aria-blender-preview-1024x1536.zip aria-ablation-out/*.png
 
-      - name: Upload eight-render result bundle
+      - name: Upload eight independent preview renders
         uses: actions/upload-artifact@v4
         with:
-          name: aria-blender-ablation-8renders-${{ github.run_id }}
+          name: aria-blender-preview-1024x1536-${{ github.run_id }}
           path: |
-            aria-blender-ablation-8renders.zip
-            aria-ablation-out/contact_all.png
-            aria-ablation-out/contact_eevee.png
-            aria-ablation-out/contact_cycles.png
+            aria-blender-preview-1024x1536.zip
+            aria-ablation-out/*.png
+            aria-ablation-out/index.html
+            aria-ablation-out/render_validation.json
+            aria-ablation-out/SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 7
           compression-level: 0
