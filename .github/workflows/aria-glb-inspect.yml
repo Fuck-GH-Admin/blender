@@ -60,10 +60,11 @@ jobs:
           INPUTS="${{ runner.temp }}/aria-inputs"
           GLB="$INPUTS/repo/04_站点镜像/models/aria/model.glb"
           CONTRACT="$INPUTS/repo/04_站点镜像/contracts/00c580250fd8f42691f75cab6fbea3d5c45760f9f84bddc861e271ccbe152072.json"
+          TEXTURES="$INPUTS/repo/04_站点镜像/textures"
           OUT="$GITHUB_WORKSPACE/glb-import-diagnostics"
           mkdir -p "$OUT"
           test -s "$GLB"; test -s "$CONTRACT"
-          "$BLENDER" -b -t 2 --python-exit-code 1             --python scripts/inspect_glb_materials.py --             --glb "$GLB" --contract "$CONTRACT" --out "$OUT/glb-import-diagnostics.json"             2>&1 | tee "$OUT/blender-inspect.log"
+          "$BLENDER" -b -t 2 --python-exit-code 1             --python scripts/inspect_glb_materials.py --             --glb "$GLB" --contract "$CONTRACT" --textures "$TEXTURES" --out "$OUT/glb-import-diagnostics.json"             2>&1 | tee "$OUT/blender-inspect.log"
           python3 - "$OUT/glb-import-diagnostics.json" <<'PY'
           import json,sys
           d=json.load(open(sys.argv[1],encoding="utf-8"))
