@@ -22,7 +22,11 @@ jobs:
         run: |
           set -euo pipefail
           for id in 14990528053 14990444009 14990752870 14991457200 14990963935; do
-            echo "Deleting temporary artifact $id"
-            gh api --method DELETE "/repos/$REPO/actions/artifacts/$id"
+            if gh api "/repos/$REPO/actions/artifacts/$id" >/dev/null 2>&1; then
+              echo "Deleting temporary artifact $id"
+              gh api --method DELETE "/repos/$REPO/actions/artifacts/$id"
+            else
+              echo "Artifact $id is already absent; continue."
+            fi
           done
-          echo "All superseded PMX-bearing temporary artifacts deleted."
+          echo "All superseded PMX-bearing temporary artifacts are absent."
