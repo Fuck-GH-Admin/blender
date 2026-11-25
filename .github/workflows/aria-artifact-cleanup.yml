@@ -21,8 +21,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for id in 14990528053 14990444009 14990752870 14991457200; do
+          for id in 14990528053 14990444009 14990752870 14991457200 14990963935; do
             echo "Deleting temporary artifact $id"
             gh api --method DELETE "/repos/$REPO/actions/artifacts/$id"
           done
-          echo "PMX-bearing temporary artifacts deleted."
+          echo "All superseded PMX-bearing temporary artifacts deleted."
