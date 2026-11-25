@@ -133,3 +133,56 @@ mirror.py                 镜像脚本（断点续传）
 |---|---|---|
 | `particles-dissolve` 模式 | — | 站点定义了但未实现，配套的 `_TransitionTex` 已随材质导出 |
 | 站点其它角色以外的资产 | — | 敌人 / NPC / 场景等，本站点只做可玩角色 |
+
+
+---
+
+## 工作区协作：GitHub Actions → ChatGPT 本地工作区
+
+本仓库按“**GitHub 保存版本与原始证据；本地工作区负责文件处理；Actions 作为可复现的远程执行节点**”协作。不要把 Vercel Sandbox 当作唯一工作目录。
+
+### 分支职责
+
+| 分支 | 职责 |
+|---|---|
+| `zzz-research-aria` | 研究主入口：分析报告、GLSL 参考实现、Blender 脚本、GLB、材质契约、贴图与 PMX 原包 |
+| `blender-5.3.0-package` | Blender 5.3.0 Linux x64 官方发行包的五段归档与 SHA-256 校验 |
+| `ops/aria-blender-transfer-20261124` | 临时自动化分支：资源搬运、Blender 预览渲染和 Artifact 上传；不合并到研究分支 |
+
+### 资源搬运流程
+
+1. 在 GitHub Actions Runner 中分别对研究分支和 Blender 包分支执行 sparse checkout，只取当前任务需要的文件。
+2. 对 Blender 分卷执行 `python3 reassemble.py --verify`，必须核对文件大小 **406,944,100 B** 和 SHA-256 `dacb8264197a3f7fda6001285a5a506fc97ee943881261c2c3bd63c882f22e05`。
+3. Runner 将模型、契约、被契约引用的贴图、PMX 原包、脚本和 Blender 压缩包组合为工作包，生成 `MANIFEST.sha256`。
+4. 使用 `actions/upload-artifact@v4` 上传 Artifact（短期周转，不作为长期档案）。
+5. 在 GitHub 连接器中按顺序获取 Workflow Run、调用 `fetch_workflow_run_artifacts` 找到 Artifact ID，再调用 `download_workflow_artifact` 下载 ZIP。
+6. 下载结果会作为当前会话文件交付；在自动挂载的工作区中直接访问其实际路径（通常在 `/mnt/data`）。先用 `ls -lh`、`stat`、`unzip -t`、`sha256sum -c` 核验，再解压到项目工作目录。
+
+**重要：** 如果下载结果已自动挂载，不要再调用 Files 的 `materialize` 复制同一个大文件。当前会话上传文件有自动挂载路径；Files materialize 对大文件另有大小限制。普通文件读写、解压和 Blender 执行应直接使用本地 Shell / Python，不需要经过 Files 服务。
+
+### 本地工作区健康检查
+
+在开始大文件搬运或渲染前，先执行：
+
+```bash
+pwd
+df -h / /mnt/data
+ls -lah /mnt/data
+stat /mnt/data/<artifact.zip>
+unzip -t /mnt/data/<artifact.zip>
+```
+
+若 `container`、Python Kernel 等多个本地执行入口在命令启动前统一返回 `ClientError`，这只能说明执行运行时暂时不可用，**不能据此判断磁盘损坏、文件丢失或权限错误**。不要反复 materialize 或重新下载来掩盖执行服务故障；先保留已下载文件，必要时改用 GitHub Actions 执行任务，待本地运行时恢复后再继续。
+
+### Blender 执行与结果回传
+
+- 本地优先：解压 Blender 官方包，使用 `blender -b -t <线程数> --python <脚本>` 执行；EEVEE 无 GPU 时可在 Xvfb + Mesa llvmpipe 下做软件渲染，Cycles 使用 CPU。
+- 本地执行环境不可用时：在隔离的 ops 分支中运行 Actions。日志必须注明 Runner、软件 OpenGL / CPU 等实际后端，不能把 Actions 渲染描述为本地 GPU 渲染。
+- 结果使用 Artifact 回传，包含原始单张 PNG、可编辑 `.blend`、脚本、运行日志、尺寸检查和 SHA-256。**不要只给缩小拼图**；联系图只作索引，用户验图必须提供独立原图。
+- Artifact 是短期交付物；长期研究结论、脚本与可复现方法再整理回研究分支。PMX 原包的作者声明及非商业 / 禁止二次配布限制继续适用，不要将临时研究 Artifact 变成公开再分发包。
+
+### 本次实验入口
+
+- 资源搬运 Workflow：[`.github/workflows/aria-blender-transfer.yml`](https://github.com/Fuck-GH-Admin/blender/blob/ops/aria-blender-transfer-20261124/.github/workflows/aria-blender-transfer.yml)
+- Blender 渲染 Workflow：[`.github/workflows/aria-blender-render.yml`](https://github.com/Fuck-GH-Admin/blender/blob/ops/aria-blender-transfer-20261124/.github/workflows/aria-blender-render.yml)
+- 渲染脚本：[`scripts/aria_blender_ablation.py`](https://github.com/Fuck-GH-Admin/blender/blob/ops/aria-blender-transfer-20261124/scripts/aria_blender_ablation.py)
