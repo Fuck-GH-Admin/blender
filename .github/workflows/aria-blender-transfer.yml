@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - ops/aria-blender-transfer-20261124
+    paths:
+      - ".github/workflows/aria-blender-transfer.yml"
+      - "transfer/**"
 
 permissions:
   contents: read
