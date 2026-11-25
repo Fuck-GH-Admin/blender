@@ -1,0 +1,46 @@
+name: AriaIdol toon preview visual QA
+
+on:
+  push:
+    branches:
+      - ops/aria-blender-transfer-20261124
+    paths:
+      - ".github/workflows/aria-toon-qa.yml"
+
+permissions:
+  actions: read
+
+jobs:
+  visual-qa:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download toon preview artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: aria-toon-preview-45558284063
+          run-id: 45558284063
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          path: ${{ runner.temp }}/toon-preview
+
+      - name: Install Pillow
+        run: |
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends python3-pil
+
+      - name: Emit preview thumbnail for visual QA
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - ${{ runner.temp }}/toon-preview/aria-toon-preview/aria_toon_eevee_5region.png <<'PY'
+          from PIL import Image
+          import sys,io,base64,hashlib,json,os
+          path=sys.argv[1]
+          im=Image.open(path).convert("RGB")
+          digest=hashlib.sha256(open(path,"rb").read()).hexdigest()
+          im.thumbnail((768,1152),Image.Resampling.LANCZOS)
+          buf=io.BytesIO(); im.save(buf,format="JPEG",quality=82,optimize=True)
+          print("TOON_QA_BASE64:"+base64.b64encode(buf.getvalue()).decode("ascii"))
+          print("TOON_QA_REPORT:"+json.dumps({"size":Image.open(path).size,"bytes":os.path.getsize(path),
+              "sha256":digest,"thumbnail_bytes":len(buf.getvalue())},ensure_ascii=False))
+          PY
