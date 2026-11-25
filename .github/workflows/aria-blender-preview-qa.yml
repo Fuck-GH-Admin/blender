@@ -18,8 +18,8 @@ jobs:
       - name: Download the 1024x1536 preview artifact
         uses: actions/download-artifact@v4
         with:
-          name: aria-blender-preview-1024x1536-45545413981
-          run-id: 45545413981
+          name: aria-blender-preview-1024x1536-45546916057
+          run-id: 45546916057
           github-token: ${{ github.token }}
           repository: ${{ github.repository }}
           path: ${{ runner.temp }}/preview
