@@ -8,6 +8,7 @@ def args_after_dashes():
     p=argparse.ArgumentParser()
     p.add_argument("--glb",required=True)
     p.add_argument("--contract",required=True)
+    p.add_argument("--textures",required=True)
     p.add_argument("--out",required=True)
     return p.parse_args(tail)
 
@@ -52,6 +53,13 @@ def main():
     bpy.ops.wm.read_factory_settings(use_empty=True)
     bpy.ops.import_scene.gltf(filepath=a.glb)
     images={}
+    external_d={}
+    for surf in contract.get("surfaces",[]):
+        did=surf.get("maps",{}).get("_MainTex")
+        path=os.path.join(a.textures,did+".png") if did else None
+        if did and path and os.path.isfile(path) and did not in external_d:
+            im=bpy.data.images.load(path,check_existing=True)
+            external_d[did]=image_stats(im,images)
     objects=[]
     for obj in bpy.context.scene.objects:
         if obj.type!="MESH": continue
@@ -119,11 +127,11 @@ def main():
         materials.append(entry)
     result={"glb":os.path.basename(a.glb),"contract_schema":contract.get("schema"),
             "object_count":len(objects),"material_count":len(materials),
-            "objects":objects,"materials":materials}
+            "external_d_images":external_d,"objects":objects,"materials":materials}
     with open(a.out,"w",encoding="utf-8") as f: json.dump(result,f,ensure_ascii=False,indent=2)
     print("GLB_DIAGNOSTIC_SUMMARY",json.dumps({
         "objects":len(objects),"materials":len(materials),
-        "image_stats":[x for x in images.values()],
+        "image_stats":[x for x in images.values()],"external_d_images":external_d,
         "material_states":[{"name":m["name"],"family":m["contract_family"],
             "source_state":m["contract_source_state"],
             "surface_render_method":m["surface_render_method"],
