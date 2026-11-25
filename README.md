@@ -178,7 +178,7 @@ unzip -t /mnt/data/<artifact.zip>
 
 - 本地优先：解压 Blender 官方包，使用 `blender -b -t <线程数> --python <脚本>` 执行；EEVEE 无 GPU 时可在 Xvfb + Mesa llvmpipe 下做软件渲染，Cycles 使用 CPU。
 - 本地执行环境不可用时：在隔离的 ops 分支中运行 Actions。日志必须注明 Runner、软件 OpenGL / CPU 等实际后端，不能把 Actions 渲染描述为本地 GPU 渲染。
-- 结果使用 Artifact 回传，包含原始单张 PNG、可编辑 `.blend`、脚本、运行日志、尺寸检查和 SHA-256。**不要只给缩小拼图**；联系图只作索引，用户验图必须提供独立原图。
+- 结果使用 Artifact 回传，包含原始单张 PNG、脚本、运行日志、尺寸检查和 SHA-256；仅在来源许可允许时附带可编辑 `.blend`。PMX 原作者禁止二次配布时，不把嵌入 PMX 网格的 `.blend` 放入公开 Artifact。**不要只给缩小拼图**；联系图只作索引，用户验图必须提供独立原图。
 - Artifact 是短期交付物；长期研究结论、脚本与可复现方法再整理回研究分支。PMX 原包的作者声明及非商业 / 禁止二次配布限制继续适用，不要将临时研究 Artifact 变成公开再分发包。
 
 ### 本次实验入口
