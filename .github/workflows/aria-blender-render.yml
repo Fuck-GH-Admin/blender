@@ -186,7 +186,7 @@ jobs:
           Blender 5.3.0
           Runner: GitHub Actions ubuntu-latest
           Resolution: 1024 x 1536 (individual preview PNGs)
-Camera lens: 80 mm portrait framing
+          Camera lens: 80 mm portrait framing
           EEVEE backend: Mesa llvmpipe software OpenGL under Xvfb
           Cycles: CPU, 8 samples, denoising enabled
           Website measured defaults used as Blender approximations: primary sun azimuth 38.7 deg, elevation 47.6 deg, exposure 0.9
