@@ -136,7 +136,7 @@ def make_toon_eevee(surf,textures):
     albedo=mix_rgb(nt,1.0,shade2,t_d.outputs["Color"],"MULTIPLY","× D albedo",380,260)
 
     final=albedo
-    emission=surf.get("emission",{}).get("primary",{})
+    emission=surf.get("emission",{})
     if emission.get("enabled") and t_a:
         sep_a=nt.nodes.new("ShaderNodeSeparateColor"); sep_a.location=(120,-180)
         nt.links.new(t_a.outputs["Color"],sep_a.inputs["Color"])
