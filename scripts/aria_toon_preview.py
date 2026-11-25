@@ -250,7 +250,7 @@ def main():
             mod.thickness=-0.04; mod.use_flip_normals=True
             mod.material_offset=base_count; mod.material_offset_rim=base_count
             mod.use_rim=False
-    scene.render.engine="BLENDER_EEVEE_NEXT"
+    base.setup_engine(scene,"EEVEE")
     if hasattr(scene,"eevee") and hasattr(scene.eevee,"taa_render_samples"):
         scene.eevee.taa_render_samples=16
     scene.render.resolution_x=a.width; scene.render.resolution_y=a.height
