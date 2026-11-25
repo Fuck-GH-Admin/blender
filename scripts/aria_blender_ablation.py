@@ -352,10 +352,27 @@ def snapshot_glb(label, meshes):
                     "max":[max(v[i] for v in vals) for i in range(2)]
                 })
             else: uv_info.append({"name":layer.name,"loops":0})
+        color_attrs=[]
+        for attr in getattr(obj.data,"color_attributes",[]):
+            count=len(attr.data); samples=[]
+            if count:
+                step=max(1,count//512)
+                for ix in range(0,count,step):
+                    try: samples.append([float(v) for v in attr.data[ix].color])
+                    except Exception: pass
+            if samples:
+                color_attrs.append({
+                    "name":attr.name,"domain":attr.domain,"data_type":attr.data_type,"count":count,
+                    "sample_mean":[sum(v[i] for v in samples)/len(samples) for i in range(4)],
+                    "sample_min":[min(v[i] for v in samples) for i in range(4)],
+                    "sample_max":[max(v[i] for v in samples) for i in range(4)]
+                })
+            else:
+                color_attrs.append({"name":attr.name,"domain":attr.domain,"data_type":attr.data_type,"count":count})
         objects.append({
             "name":obj.name,"vertices":len(obj.data.vertices),"polygons":len(obj.data.polygons),
             "materials":slot_names,"polygon_material_counts":poly_counts,
-            "uv_layers":uv_info,
+            "uv_layers":uv_info,"color_attributes":color_attrs,
             "world_location":_json_value(obj.matrix_world.translation)
         })
         for mat in obj.data.materials:
@@ -378,8 +395,24 @@ def snapshot_glb(label, meshes):
                             "name":im.name,"filepath":im.filepath,
                             "size":list(im.size),"channels":im.channels,
                             "colorspace":im.colorspace_settings.name,
-                            "alpha_mode":str(im.alpha_mode),"has_data":im.has_data
+                            "alpha_mode":str(im.alpha_mode),"has_data":im.has_data,
+                            "pixel_sample":None
                         }
+                        if im is not None and im.has_data and im.size[0]>0 and im.size[1]>0:
+                            npx=im.size[0]*im.size[1]; channels=max(1,im.channels)
+                            step=max(1,npx//2048); sums=[0.0]*min(4,channels)
+                            mins=[1e9]*len(sums); maxs=[-1e9]*len(sums); seen=0
+                            px=im.pixels
+                            for pix in range(0,npx,step):
+                                base=pix*channels
+                                for ci in range(len(sums)):
+                                    val=float(px[base+ci]); sums[ci]+=val
+                                    mins[ci]=min(mins[ci],val); maxs[ci]=max(maxs[ci],val)
+                                seen+=1
+                            nd["image"]["pixel_sample"]={
+                                "samples":seen,"mean":[v/seen for v in sums],
+                                "min":mins,"max":maxs
+                            }
                     if node.type=="BSDF_PRINCIPLED":
                         nd["inputs"]={}
                         for socket_name in ("Base Color","Alpha","Roughness","Metallic","Normal"):
