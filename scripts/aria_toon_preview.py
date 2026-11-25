@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Build a first real-model EEVEE toon preview from the recovered AriaIdol contract."""
 import argparse, json, os, sys
+sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 import bpy
 import aria_blender_ablation as base
 
