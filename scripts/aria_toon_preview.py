@@ -137,7 +137,7 @@ def make_toon_eevee(surf,textures):
     albedo=mix_rgb(nt,1.0,shade2,t_d.outputs["Color"],"MULTIPLY","× D albedo",380,260)
 
     final=albedo
-    emission=surf.get("emission",{})
+    emission=surf.get("emission",{}).get("primary",{})
     if emission.get("enabled") and t_a:
         sep_a=nt.nodes.new("ShaderNodeSeparateColor"); sep_a.location=(120,-180)
         nt.links.new(t_a.outputs["Color"],sep_a.inputs["Color"])
@@ -165,7 +165,7 @@ def make_toon_eevee(surf,textures):
 
 def make_outline(surf,textures):
     outline=surf.get("outline",{})
-    if not outline.get("enabled"): 
+    if not outline.get("enabled"):
         m=bpy.data.materials.new("Aria_Outline_Transparent")
         m.use_nodes=True; nt=m.node_tree; nt.nodes.clear()
         out=nt.nodes.new("ShaderNodeOutputMaterial"); tr=nt.nodes.new("ShaderNodeBsdfTransparent")
@@ -178,17 +178,30 @@ def make_outline(surf,textures):
     nt=m.node_tree; nt.nodes.clear()
     out=nt.nodes.new("ShaderNodeOutputMaterial"); emit=nt.nodes.new("ShaderNodeEmission")
     nt.links.new(emit.outputs["Emission"],out.inputs["Surface"])
-    mp=texture_path(textures,surf,"_OtherDataTex")
-    if mp:
-        uv=nt.nodes.new("ShaderNodeTexCoord")
-        tex=image_node(nt,uv,mp,"Non-Color","M region",-600,0)
-        sep=nt.nodes.new("ShaderNodeSeparateColor"); nt.links.new(tex.outputs["Color"],sep.inputs["Color"])
-        color=ramp5(nt,sep.outputs["Red"],outline.get("colours",[]),"Outline region",-300,0)
-        nt.links.new(color,emit.inputs["Color"])
+    colours=outline.get("colours",[])
+    mode=outline.get("mode")
+    tint=outline.get("tint",[1,1,1,1])
+    if mode=="region-map" and outline.get("data"):
+        data_path=os.path.join(textures,outline["data"]+".png")
+        if os.path.isfile(data_path):
+            uv=nt.nodes.new("ShaderNodeTexCoord")
+            tex=image_node(nt,uv,data_path,"Non-Color","Outline region map",-600,0)
+            sep=nt.nodes.new("ShaderNodeSeparateColor"); nt.links.new(tex.outputs["Color"],sep.inputs["Color"])
+            color=ramp5(nt,sep.outputs["Red"],colours,"Outline 5-region",-300,0)
+        else:
+            c=(colours or [[1,0.2167,0.2167,1]])[0]
+            color=(float(c[0]),float(c[1]),float(c[2]),1)
     else:
-        c=(outline.get("colours") or [[1,0.2167,0.2167,1]])[0]
-        emit.inputs["Color"].default_value=(c[0],c[1],c[2],1)
+        # Face-bits is not the same encoding as the five-region body map;
+        # keep the verified primary face outline colour until its bit layout is mapped.
+        c=(colours or [[1,0.2167,0.2167,1]])[0]
+        color=(float(c[0]),float(c[1]),float(c[2]),1)
+    tinted=mix_rgb(nt,1.0,color,tint,"MULTIPLY","outline tint",0,-300)
+    nt.links.new(tinted,emit.inputs["Color"])
+    m["outline_mode"]=str(mode)
+    m["outline_data"]=str(outline.get("data",""))
     return m
+
 
 def find_surface(surfaces,obj_name,mat_name):
     candidates=[s for s in surfaces if s.get("materialName")==mat_name and
@@ -247,7 +260,7 @@ def main():
                     ol=make_outline({"outline":{"enabled":False}},a.textures)
                 obj.data.materials.append(ol)
             mod=obj.modifiers.new("ZZZ_Outline","SOLIDIFY")
-            mod.thickness=-0.04; mod.use_flip_normals=True
+            mod.thickness=-0.03; mod.use_flip_normals=True
             mod.material_offset=base_count; mod.material_offset_rim=base_count
             mod.use_rim=False
     base.setup_engine(scene,"EEVEE")
