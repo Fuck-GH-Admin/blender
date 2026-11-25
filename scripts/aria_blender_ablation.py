@@ -330,6 +330,15 @@ def build_glb(glb_path,contract_path,textures_dir,tuned,width,height):
         if o: bpy.data.objects.remove(o,do_unlink=True)
     sc=bpy.context.scene
     meshes=[o for o in sc.objects if o.type=="MESH"]
+    # Character-only comparison: the PMX input is 爱芮.pmx (not 武器.pmx),
+    # so remove GLB weapon / FX / stencil-shadow meshes before measuring bounds.
+    excluded=[]
+    for o in list(meshes):
+        if "Weapon" in o.name or o.name.startswith("AriaIdol_FX_") or "HairShadow" in o.name:
+            excluded.append(o.name)
+            bpy.data.objects.remove(o,do_unlink=True)
+    meshes=[o for o in sc.objects if o.type=="MESH"]
+    print("GLB_EXCLUDED_NONCHARACTER_MESHES",json.dumps(excluded,ensure_ascii=False),flush=True)
     root=bpy.data.objects.get("Avatar_Female_Size01_AriaIdol_Model")
     if root: scale=normalize_glb(root,meshes)
     else: scale=None
