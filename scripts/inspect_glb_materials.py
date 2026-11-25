@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import bpy, argparse, json, os
+import bpy, argparse, json, os, hashlib
 from array import array
 
 def args_after_dashes():
@@ -108,6 +108,13 @@ def main():
                 n["projection"]=str(getattr(node,"projection",None))
                 n["extension"]=str(getattr(node,"extension",None))
                 n["interpolation"]=str(getattr(node,"interpolation",None))
+                tm=node.texture_mapping
+                n["texture_mapping"]={"vector_type":str(tm.vector_type),
+                    "translation":jv(tm.translation),"rotation":jv(tm.rotation),"scale":jv(tm.scale)}
+                iu=node.image_user
+                n["image_user"]={"frame_current":iu.frame_current,"frame_duration":iu.frame_duration,
+                    "frame_offset":iu.frame_offset,"frame_start":iu.frame_start,
+                    "use_auto_refresh":iu.use_auto_refresh,"use_cyclic":iu.use_cyclic}
             if node.type=="BSDF_PRINCIPLED":
                 n["inputs"]={}
                 for name in ("Base Color","Alpha","Roughness","Metallic","Normal"):
@@ -142,7 +149,7 @@ def main():
         "material_states":[{"name":m["name"],"family":m["contract_family"],
             "source_state":m["contract_source_state"],
             "surface_render_method":m["surface_render_method"],
-            "mix":[n for n in m["nodes"] if n["type"]=="MIX"],
+            "mix":[n for n in m["nodes"] if n["type"]=="MIX"],"tex_nodes":[n for n in m["nodes"] if n["type"]=="TEX_IMAGE"],
             "bsdf":[n.get("inputs") for n in m["nodes"] if n["type"]=="BSDF_PRINCIPLED"]}
             for m in materials]
     },ensure_ascii=False),flush=True)
