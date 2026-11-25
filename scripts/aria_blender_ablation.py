@@ -13,6 +13,8 @@ def args_after_dashes():
     p.add_argument("--contract", required=True)
     p.add_argument("--textures", required=True)
     p.add_argument("--out", required=True)
+    p.add_argument("--width", type=int, default=1024)
+    p.add_argument("--height", type=int, default=1536)
     return p.parse_args(tail)
 
 class Reader:
@@ -182,7 +184,7 @@ def normalize_glb(root, meshes, target_height=1.70):
     bpy.context.view_layer.update()
     return factor
 
-def setup_scene():
+def setup_scene(width=1024,height=1536):
     sc=bpy.context.scene
     world=bpy.data.worlds.new("Ablation_World"); sc.world=world; world.use_nodes=True
     bg=world.node_tree.nodes.get("Background")
@@ -206,7 +208,7 @@ def setup_scene():
     cam.location=(0.03,-4.6,0.91)
     cam.rotation_euler=(Vector((0,0,0.88))-cam.location).to_track_quat("-Z","Y").to_euler()
     sc.camera=cam
-    sc.render.resolution_x=384; sc.render.resolution_y=576; sc.render.resolution_percentage=100
+    sc.render.resolution_x=width; sc.render.resolution_y=height; sc.render.resolution_percentage=100
     sc.render.image_settings.file_format="PNG"; sc.render.image_settings.color_mode="RGBA"
     sc.render.image_settings.compression=15; sc.render.film_transparent=False
     sc.view_settings.view_transform="Standard"; sc.view_settings.look="None"
@@ -234,7 +236,7 @@ def render_one(sc,variant,engine,outdir):
     print("RENDER_OK",variant,engine,os.path.getsize(path),flush=True)
     return path
 
-def build_pmx(pmx_path,tuned):
+def build_pmx(pmx_path,tuned,width,height):
     bpy.ops.wm.read_factory_settings(use_empty=True)
     M=parse_pmx(pmx_path); pmx_dir=os.path.dirname(pmx_path)
     tris=[]; poly_mats=[]; off=0; skipped_add=0
@@ -281,9 +283,9 @@ def build_pmx(pmx_path,tuned):
     ob.rotation_euler=(math.radians(90),0,math.radians(180))
     scale=normalize_object(ob)
     print("PMX_GEOMETRY",len(me.vertices),len(me.polygons),"additive overlay index count skipped",skipped_add,"scale",scale,flush=True)
-    return setup_scene()
+    return setup_scene(width,height)
 
-def build_glb(glb_path,contract_path,textures_dir,tuned):
+def build_glb(glb_path,contract_path,textures_dir,tuned,width,height):
     bpy.ops.wm.read_factory_settings(use_empty=True)
     bpy.ops.import_scene.gltf(filepath=glb_path)
     for name in ("Cube","Icosphere","Camera","Light"):
@@ -323,15 +325,15 @@ def build_glb(glb_path,contract_path,textures_dir,tuned):
         for o in meshes:
             for i,m in enumerate(o.data.materials):
                 if m in replacements: o.data.materials[i]=replacements[m]
-    return setup_scene()
+    return setup_scene(width,height)
 
 def main():
     a=args_after_dashes(); os.makedirs(a.out,exist_ok=True)
     variants=[
-        ("pmx_base",lambda:build_pmx(a.pmx,False)),
-        ("pmx_tuned",lambda:build_pmx(a.pmx,True)),
-        ("glb_imported",lambda:build_glb(a.glb,a.contract,a.textures,False)),
-        ("glb_native_dn",lambda:build_glb(a.glb,a.contract,a.textures,True)),
+        ("pmx_base",lambda:build_pmx(a.pmx,False,a.width,a.height)),
+        ("pmx_tuned",lambda:build_pmx(a.pmx,True,a.width,a.height)),
+        ("glb_imported",lambda:build_glb(a.glb,a.contract,a.textures,False,a.width,a.height)),
+        ("glb_native_dn",lambda:build_glb(a.glb,a.contract,a.textures,True,a.width,a.height)),
     ]
     results=[]
     for name,builder in variants:
@@ -347,6 +349,7 @@ def main():
                 print("BLEND_SAVED",blend,flush=True)
     with open(os.path.join(os.path.dirname(a.out),"results.json"),"w") as f:
         json.dump(results,f,indent=2)
+    print("RENDER_RESOLUTION",a.width,a.height,flush=True)
     print("ALL_RESULTS",json.dumps(results),flush=True)
 
 if __name__=="__main__":
