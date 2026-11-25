@@ -24,6 +24,11 @@ jobs:
           repository: ${{ github.repository }}
           path: ${{ runner.temp }}/preview
 
+      - name: Install Pillow
+        run: |
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends python3-pil
+
       - name: Emit model thumbnails for visual QA
         shell: bash
         run: |
