@@ -1,0 +1,88 @@
+name: AriaIdol GLB import diagnostics
+
+on:
+  push:
+    branches:
+      - ops/aria-blender-transfer-20261124
+    paths:
+      - ".github/workflows/aria-glb-inspect.yml"
+      - "scripts/inspect_glb_materials.py"
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout diagnostic script
+        uses: actions/checkout@v4
+        with:
+          ref: ops/aria-blender-transfer-20261124
+          fetch-depth: 1
+          sparse-checkout: |
+            scripts/inspect_glb_materials.py
+          sparse-checkout-cone-mode: false
+
+      - name: Download verified Blender and AriaIdol inputs
+        uses: actions/download-artifact@v4
+        with:
+          name: aria-blender-inputs-45411674206
+          run-id: 45411674206
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          path: ${{ runner.temp }}/aria-inputs
+
+      - name: Install Blender runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "${{ runner.temp }}/blender"
+          tar -xf "${{ runner.temp }}/aria-inputs/blender/blender-5.3.0-linux-x64.tar.xz" -C "${{ runner.temp }}/blender"
+          BLENDER="$(find "${{ runner.temp }}/blender" -type f -name blender -perm -111 | head -1)"
+          test -x "$BLENDER"
+          echo "BLENDER=$BLENDER" >> "$GITHUB_ENV"
+          "$BLENDER" --version | head -5
+          ldd "$BLENDER" | grep "not found" && exit 1 || true
+
+      - name: Inspect imported GLB materials without rendering
+        shell: bash
+        run: |
+          set -euo pipefail
+          INPUTS="${{ runner.temp }}/aria-inputs"
+          GLB="$INPUTS/repo/04_站点镜像/models/aria/model.glb"
+          CONTRACT="$INPUTS/repo/04_站点镜像/contracts/00c580250fd8f42691f75cab6fbea3d5c45760f9f84bddc861e271ccbe152072.json"
+          OUT="$GITHUB_WORKSPACE/glb-import-diagnostics"
+          mkdir -p "$OUT"
+          test -s "$GLB"; test -s "$CONTRACT"
+          "$BLENDER" -b -t 2 --python-exit-code 1             --python scripts/inspect_glb_materials.py --             --glb "$GLB" --contract "$CONTRACT" --out "$OUT/glb-import-diagnostics.json"             2>&1 | tee "$OUT/blender-inspect.log"
+          python3 - "$OUT/glb-import-diagnostics.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding="utf-8"))
+          print("OBJECTS",d["object_count"],"MATERIALS",d["material_count"])
+          for m in d["materials"]:
+              p=[n.get("inputs",{}) for n in m["nodes"] if n["type"]=="BSDF_PRINCIPLED"]
+              mix=[n for n in m["nodes"] if n["type"]=="MIX"]
+              imgs=[n.get("image") for n in m["nodes"] if n["type"]=="TEX_IMAGE"]
+              print("MAT",m["name"],"family",m["contract_family"],"state",m["contract_source_state"],
+                    "BSDF",p,"MIX",mix,"IMAGES",imgs)
+          PY
+          (cd "$OUT" && sha256sum *.json *.log > SHA256SUMS.txt)
+          zip -qr glb-import-diagnostics.zip "$OUT"
+          unzip -t glb-import-diagnostics.zip | tail -2
+          sha256sum glb-import-diagnostics.zip
+
+      - name: Upload GLB import diagnostics
+        uses: actions/upload-artifact@v4
+        with:
+          name: aria-glb-import-diagnostics-${{ github.run_id }}
+          path: |
+            glb-import-diagnostics.zip
+            glb-import-diagnostics/glb-import-diagnostics.json
+            glb-import-diagnostics/blender-inspect.log
+            glb-import-diagnostics/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
