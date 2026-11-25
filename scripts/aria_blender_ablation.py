@@ -452,7 +452,7 @@ def build_glb(glb_path,contract_path,textures_dir,mode,width,height):
     for surf in contract["surfaces"]:
         bymat.setdefault(surf["materialName"],surf)
 
-    if mode=="uvfix":
+    if mode in ("uvfix","d_direct"):
         # The imported GLB has valid UVMap layers, but its Image Texture Vector
         # sockets are unlinked. Blender therefore falls back to Generated coords.
         # Reconnect the exported D textures to UV0, then apply the contract's
@@ -498,9 +498,16 @@ def build_glb(glb_path,contract_path,textures_dir,mode,width,height):
                 if queue=="opaque" and alpha is not None:
                     for link in list(alpha.links): mat.node_tree.links.remove(link)
                     alpha.default_value=1.0
+                if mode=="d_direct":
+                    tex_nodes=[n for n in mat.node_tree.nodes if n.type=="TEX_IMAGE" and n.image]
+                    base=node.inputs.get("Base Color")
+                    if tex_nodes and base is not None:
+                        for link in list(base.links): mat.node_tree.links.remove(link)
+                        mat.node_tree.links.new(tex_nodes[0].outputs["Color"],base)
+                        print("GLB_D_DIRECT",mat.name,"image",tex_nodes[0].image.name,flush=True)
             print("GLB_UV_STATE_FIX",mat.name,"queue",queue,"Cull",cull,
                   "UV0_relinked",bool(texcoord),"metallic_fallback=0",flush=True)
-        snapshot_glb("uv0_and_contract_state_repaired",meshes)
+        snapshot_glb("uv0_contract_state_and_direct_d" if mode=="d_direct" else "uv0_and_contract_state_repaired",meshes)
 
     if mode=="native":
         replacements={}
@@ -537,6 +544,7 @@ def main():
         ("pmx_tuned",lambda:build_pmx(a.pmx,True,a.width,a.height)),
         ("glb_imported",lambda:build_glb(a.glb,a.contract,a.textures,"raw",a.width,a.height)),
         ("glb_uvfix",lambda:build_glb(a.glb,a.contract,a.textures,"uvfix",a.width,a.height)),
+        ("glb_embedded_d",lambda:build_glb(a.glb,a.contract,a.textures,"d_direct",a.width,a.height)),
         ("glb_native_dn",lambda:build_glb(a.glb,a.contract,a.textures,"native",a.width,a.height)),
     ]
     results=[]
@@ -546,7 +554,7 @@ def main():
             sc=builder()
             path=render_one(sc,name,engine,a.out)
             results.append({"variant":name,"engine":engine,"path":path,"bytes":os.path.getsize(path)})
-            if engine=="EEVEE" and name in ("pmx_tuned","glb_uvfix","glb_native_dn"):
+            if engine=="EEVEE" and name in ("pmx_tuned","glb_uvfix","glb_embedded_d","glb_native_dn"):
                 blend=os.path.join(os.path.dirname(a.out),name+".blend")
                 bpy.ops.file.pack_all()
                 bpy.ops.wm.save_as_mainfile(filepath=blend)
