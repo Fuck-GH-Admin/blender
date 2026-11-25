@@ -344,6 +344,22 @@ def build_glb(glb_path,contract_path,textures_dir,tuned,width,height):
     else: scale=None
     print("GLB_GEOMETRY",len(meshes),sum(len(o.data.vertices) for o in meshes),
           sum(len(o.data.polygons) for o in meshes),"scale",scale,flush=True)
+    if not tuned:
+        # The exported contract records opaque queue / alphaClip=0 / Cull=0 for the
+        # character surfaces. glTF import may preserve texture-alpha blending and
+        # single-sided culling that are not the source render state; restore the
+        # contract's opaque, double-sided state while leaving imported PBR factors intact.
+        for mat in bpy.data.materials:
+            mat.use_backface_culling=False
+            if mat.use_nodes:
+                for node in mat.node_tree.nodes:
+                    if node.type=="BSDF_PRINCIPLED":
+                        alpha=node.inputs.get("Alpha")
+                        if alpha is not None:
+                            for link in list(alpha.links):
+                                mat.node_tree.links.remove(link)
+                            alpha.default_value=1.0
+            print("GLB_IMPORTED_STATE_FIX",mat.name,"double_sided=True","opaque=True",flush=True)
     if tuned:
         contract=json.load(open(contract_path,encoding="utf-8"))
         bymat={}
