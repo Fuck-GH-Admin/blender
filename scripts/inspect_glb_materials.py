@@ -85,7 +85,9 @@ def main():
         objects.append({"name":obj.name,"vertices":len(obj.data.vertices),
                         "polygons":len(obj.data.polygons),
                         "material_slots":[m.name if m else None for m in obj.data.materials],
-                        "uv_layers":uvs,"active_uv":obj.data.uv_layers.active.name if obj.data.uv_layers.active else None,\n                        "active_render_uv":obj.data.uv_layers.active_render.name if obj.data.uv_layers.active_render else None,\n                        "color_attributes":attrs})
+                        "uv_layers":uvs,"active_uv":obj.data.uv_layers.active.name if obj.data.uv_layers.active else None,
+                        "active_render_uv":obj.data.uv_layers.active_render.name if obj.data.uv_layers.active_render else None,
+                        "color_attributes":attrs})
     materials=[]
     for mat in bpy.data.materials:
         if not mat.use_nodes: continue
