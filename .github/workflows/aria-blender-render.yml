@@ -151,7 +151,6 @@ jobs:
           print(json.dumps(records,ensure_ascii=False,indent=2))
           PY
           cp scripts/aria_blender_ablation.py "$OUT/"
-          cp "$GITHUB_WORKSPACE/pmx_tuned.blend" "$OUT/"
           cp "$GITHUB_WORKSPACE/glb_native_dn.blend" "$OUT/"
           cp "$GITHUB_WORKSPACE/results.json" "$OUT/"
           cat > "$OUT/实验说明_中文.md" <<'MD'
@@ -181,12 +180,13 @@ jobs:
 
           ## 渲染环境
           Blender 5.3.0；EEVEE 通过 Xvfb + Mesa llvmpipe 软件 OpenGL；Cycles CPU 8 samples + denoise；无物理 GPU。
-          PNG 尺寸必须为 1024×1536。工作流会检查八张图是否存在、尺寸正确、文件非空并计算基本颜色统计；这不是自动视觉验收。
+          PNG 尺寸必须为 1024×1536。工作流会检查八张图是否存在、尺寸正确、文件非空并计算基本颜色统计；这不是自动视觉验收。相机焦距 80 mm，用于让全身主体在预检图中占更大画幅。为遵守 PMX 原作者的禁止二次配布声明，Artifact 不包含嵌入 PMX 网格的 .blend 工程；仅交付渲染图、脚本与记录。
           MD
           cat > "$OUT/ENVIRONMENT.txt" <<TXT
           Blender 5.3.0
           Runner: GitHub Actions ubuntu-latest
           Resolution: 1024 x 1536 (individual preview PNGs)
+Camera lens: 80 mm portrait framing
           EEVEE backend: Mesa llvmpipe software OpenGL under Xvfb
           Cycles: CPU, 8 samples, denoising enabled
           Website measured defaults used as Blender approximations: primary sun azimuth 38.7 deg, elevation 47.6 deg, exposure 0.9

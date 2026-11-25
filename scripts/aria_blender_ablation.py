@@ -233,7 +233,7 @@ def setup_scene(width=1024,height=1536):
     fp=fm.node_tree.nodes.get("Principled BSDF")
     set_input(fp,"Base Color",(0.045,0.052,0.066,1)); set_input(fp,"Roughness",0.88)
     floor.data.materials.append(fm)
-    cd=bpy.data.cameras.new("Ablation_Camera"); cd.lens=55
+    cd=bpy.data.cameras.new("Ablation_Camera"); cd.lens=80
     cam=bpy.data.objects.new("Ablation_Camera",cd); sc.collection.objects.link(cam)
     cam.location=(0.03,-4.6,0.91)
     cam.rotation_euler=(Vector((0,0,0.88))-cam.location).to_track_quat("-Z","Y").to_euler()
