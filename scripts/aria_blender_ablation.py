@@ -390,6 +390,24 @@ def snapshot_glb(label, meshes):
                                     "linked":bool(sock.is_linked),
                                     "from":[l.from_node.name+":"+l.from_socket.name for l in sock.links]
                                 }
+                    elif node.type in ("MIX","MATH","ATTRIBUTE"):
+                        nd["properties"]={
+                            "data_type":str(getattr(node,"data_type",None)),
+                            "blend_type":str(getattr(node,"blend_type",None)),
+                            "operation":str(getattr(node,"operation",None)),
+                            "attribute_name":str(getattr(node,"attribute_name",None)),
+                            "clamp_factor":getattr(node,"clamp_factor",None),
+                            "clamp_result":getattr(node,"clamp_result",None)
+                        }
+                        nd["inputs"]=[]
+                        for sock in node.inputs:
+                            try: default=_json_value(sock.default_value)
+                            except Exception: default=None
+                            nd["inputs"].append({
+                                "name":sock.name,"identifier":sock.identifier,"default":default,
+                                "linked":bool(sock.is_linked),
+                                "from":[l.from_node.name+":"+l.from_socket.name for l in sock.links]
+                            })
                     item["nodes"].append(nd)
                 for link in nt.links:
                     item["links"].append({
