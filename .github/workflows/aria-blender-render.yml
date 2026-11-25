@@ -153,7 +153,8 @@ jobs:
           cp scripts/aria_blender_ablation.py "$OUT/"
           cp "$GITHUB_WORKSPACE/pmx_tuned.blend" "$OUT/"
           cp "$GITHUB_WORKSPACE/glb_native_dn.blend" "$OUT/"
-          cat > "$OUT/实验说明_中文.md" <<'MD"
+          cp "$GITHUB_WORKSPACE/results.json" "$OUT/"
+          cat > "$OUT/实验说明_中文.md" <<'MD'
           # 爱芮 Blender 预检 · 八张独立原图（1024×1536）
 
           本轮只做人物 / 模型完整性与明显材质 bug 预检，不是最终 2K 成片。用户确认保留的方案才进入 2048×3072 或更高分辨率正式渲染。
@@ -192,7 +193,7 @@ jobs:
           Secondary directional fill is provisional; exact source vector/intensity unavailable
           No physical GPU used
           TXT
-          (cd "$OUT" && sha256sum *.png *.blend *.py *.json *.md *.txt *.html > SHA256SUMS.txt)
+          (cd "$OUT" && sha256sum *.png *.blend *.py *.json *.md *.txt *.html *.log > SHA256SUMS.txt)
           cd "$GITHUB_WORKSPACE"
           zip -qr aria-blender-preview-1024x1536.zip aria-ablation-out
           unzip -t aria-blender-preview-1024x1536.zip | tail -2
