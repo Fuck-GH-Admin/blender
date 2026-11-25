@@ -202,7 +202,7 @@ jobs:
           sha256sum aria-blender-preview-1024x1536.zip
           ls -lh aria-blender-preview-1024x1536.zip aria-ablation-out/*.png
 
-      - name: Upload eight independent preview renders
+      - name: Upload ten independent preview renders
         uses: actions/upload-artifact@v4
         with:
           name: aria-blender-preview-1024x1536-${{ github.run_id }}
