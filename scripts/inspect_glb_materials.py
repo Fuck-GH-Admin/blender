@@ -85,7 +85,7 @@ def main():
         objects.append({"name":obj.name,"vertices":len(obj.data.vertices),
                         "polygons":len(obj.data.polygons),
                         "material_slots":[m.name if m else None for m in obj.data.materials],
-                        "uv_layers":uvs,"color_attributes":attrs})
+                        "uv_layers":uvs,"active_uv":obj.data.uv_layers.active.name if obj.data.uv_layers.active else None,\n                        "active_render_uv":obj.data.uv_layers.active_render.name if obj.data.uv_layers.active_render else None,\n                        "color_attributes":attrs})
     materials=[]
     for mat in bpy.data.materials:
         if not mat.use_nodes: continue
@@ -101,6 +101,11 @@ def main():
             n={"name":node.name,"type":node.type,"bl_idname":node.bl_idname}
             if node.type=="TEX_IMAGE":
                 n["image"]=image_stats(node.image,images) if node.image else None
+                vec=node.inputs.get("Vector")
+                n["vector"]={"linked":vec.is_linked,"from":[x.from_node.name+":"+x.from_socket.name for x in vec.links]} if vec else None
+                n["projection"]=str(getattr(node,"projection",None))
+                n["extension"]=str(getattr(node,"extension",None))
+                n["interpolation"]=str(getattr(node,"interpolation",None))
             if node.type=="BSDF_PRINCIPLED":
                 n["inputs"]={}
                 for name in ("Base Color","Alpha","Roughness","Metallic","Normal"):
@@ -130,7 +135,7 @@ def main():
             "external_d_images":external_d,"objects":objects,"materials":materials}
     with open(a.out,"w",encoding="utf-8") as f: json.dump(result,f,ensure_ascii=False,indent=2)
     print("GLB_DIAGNOSTIC_SUMMARY",json.dumps({
-        "objects":len(objects),"materials":len(materials),
+        "objects":len(objects),"materials":len(materials),"uv_status":[{"name":o["name"],"uv":o["uv_layers"],"active_uv":o["active_uv"],"active_render_uv":o["active_render_uv"]} for o in objects],
         "image_stats":[x for x in images.values()],"external_d_images":external_d,
         "material_states":[{"name":m["name"],"family":m["contract_family"],
             "source_state":m["contract_source_state"],
