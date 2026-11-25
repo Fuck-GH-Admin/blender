@@ -39,13 +39,19 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            libx11-6 libxrender1 libxfixes3 libxi6 libxkbcommon0 libsm6 libice6 \
+            libxext6 libgl1 libglx-mesa0 libegl1 libgl1-mesa-dri libxrandr2 \
+            libxxf86vm1 libxcursor1 libxinerama1 libwayland-client0 libdecor-0-0 \
+            xz-utils unzip
           mkdir -p "${{ runner.temp }}/blender"
           tar -xf "${{ runner.temp }}/aria-inputs/blender/blender-5.3.0-linux-x64.tar.xz" -C "${{ runner.temp }}/blender"
           BLENDER="$(find "${{ runner.temp }}/blender" -type f -name blender -perm -111 | head -1)"
           test -x "$BLENDER"
           echo "BLENDER=$BLENDER" >> "$GITHUB_ENV"
           "$BLENDER" --version | head -5
-          ldd "$BLENDER" | grep "not found" && exit 1 || true
+          if ldd "$BLENDER" | grep "not found"; then exit 1; fi
 
       - name: Inspect imported GLB materials without rendering
         shell: bash
