@@ -186,17 +186,47 @@ def normalize_glb(root, meshes, target_height=1.70):
 
 def setup_scene(width=1024,height=1536):
     sc=bpy.context.scene
-    world=bpy.data.worlds.new("Ablation_World"); sc.world=world; world.use_nodes=True
-    bg=world.node_tree.nodes.get("Background")
-    bg.inputs["Color"].default_value=(0.34,0.37,0.43,1)
-    bg.inputs["Strength"].default_value=0.32
-    def area(name,loc,power,size,color):
-        d=bpy.data.lights.new(name,"AREA"); d.energy=power; d.shape="DISK"; d.size=size; d.color=color
-        o=bpy.data.objects.new(name,d); sc.collection.objects.link(o); o.location=loc
-        o.rotation_euler=(Vector((0,0,0.88))-o.location).to_track_quat("-Z","Y").to_euler()
-    area("Key_Softbox",(-2.7,-3.2,3.2),470,3.2,(1.0,0.90,0.84))
-    area("Fill_Softbox",(2.6,-2.3,2.0),190,3.6,(0.76,0.84,1.0))
-    area("Rim_Softbox",(0.7,2.2,3.1),300,2.5,(0.76,0.86,1.0))
+    # Website evidence: two DirectionalLights + AmbientLight + HemisphereLight,
+    # no environment map. Exact primary direction is from the measured UI defaults.
+    # Secondary direction/intensity are not exposed by the source report, so this
+    # low-energy fill is explicitly a Blender approximation, not a recovered value.
+    world=bpy.data.worlds.new("Aria_Web_Hemisphere_Approx"); sc.world=world; world.use_nodes=True
+    nt=world.node_tree; nt.nodes.clear()
+    out=nt.nodes.new("ShaderNodeOutputWorld")
+    bg=nt.nodes.new("ShaderNodeBackground")
+    geo=nt.nodes.new("ShaderNodeNewGeometry")
+    sep=nt.nodes.new("ShaderNodeSeparateXYZ")
+    scale=nt.nodes.new("ShaderNodeMath"); scale.operation="MULTIPLY_ADD"
+    scale.inputs[1].default_value=0.5; scale.inputs[2].default_value=0.5
+    ramp=nt.nodes.new("ShaderNodeValToRGB")
+    ramp.color_ramp.elements.remove(ramp.color_ramp.elements[1])
+    ground=ramp.color_ramp.elements[0]; ground.position=0.0
+    ground.color=(0.18,0.16,0.19,1)
+    sky=ramp.color_ramp.elements.new(1.0); sky.color=(0.48,0.56,0.70,1)
+    mid=ramp.color_ramp.elements.new(0.5); mid.color=(0.31,0.34,0.41,1)
+    nt.links.new(geo.outputs["Incoming"],sep.inputs["Vector"])
+    nt.links.new(sep.outputs["Z"],scale.inputs[0])
+    nt.links.new(scale.outputs[0],ramp.inputs["Fac"])
+    nt.links.new(ramp.outputs["Color"],bg.inputs["Color"])
+    bg.inputs["Strength"].default_value=0.38
+    nt.links.new(bg.outputs["Background"],out.inputs["Surface"])
+
+    target=Vector((0,0,0.88))
+    def sun(name,azimuth_deg,elevation_deg,energy,color,angular_diameter_deg):
+        az=math.radians(azimuth_deg); el=math.radians(elevation_deg)
+        direction=Vector((math.sin(az)*math.cos(el),
+                          -math.cos(az)*math.cos(el),
+                          math.sin(el)))
+        data=bpy.data.lights.new(name,"SUN")
+        data.energy=energy; data.color=color
+        data.angle=math.radians(angular_diameter_deg)
+        obj=bpy.data.objects.new(name,data); sc.collection.objects.link(obj)
+        obj.location=target+direction*4.0
+        obj.rotation_euler=(target-obj.location).to_track_quat("-Z","Y").to_euler()
+        return obj
+    sun("Key_Directional_Measured_38.7_47.6",38.7,47.6,2.0,(1.0,0.96,0.92),0.8)
+    sun("Fill_Directional_Approx_Secondary",218.7,22.0,0.32,(0.78,0.84,1.0),1.8)
+
     bpy.ops.mesh.primitive_plane_add(size=12,location=(0,0,-0.015))
     floor=bpy.context.object; floor.name="Neutral_Ground"
     fm=bpy.data.materials.new("Neutral_Ground_Mat"); fm.use_nodes=True
@@ -210,10 +240,17 @@ def setup_scene(width=1024,height=1536):
     sc.camera=cam
     sc.render.resolution_x=width; sc.render.resolution_y=height; sc.render.resolution_percentage=100
     sc.render.image_settings.file_format="PNG"; sc.render.image_settings.color_mode="RGBA"
-    sc.render.image_settings.compression=15; sc.render.film_transparent=False
+    sc.render.image_settings.compression=10; sc.render.film_transparent=False
     sc.view_settings.view_transform="Standard"; sc.view_settings.look="None"
-    sc.view_settings.exposure=0.0; sc.view_settings.gamma=1.0
+    # Website's measured default exposure is 0.9. Blender exposure is an approximation
+    # of that display control; it is not claimed to be a numerically identical engine value.
+    sc.view_settings.exposure=0.9; sc.view_settings.gamma=1.0
     sc.render.threads_mode="FIXED"; sc.render.threads=4
+    sc["lighting_reference"]="ZZZ Studio measured: 2 directional + ambient + hemisphere; no envMap"
+    sc["primary_light_azimuth_deg"]=38.7
+    sc["primary_light_elevation_deg"]=47.6
+    sc["secondary_light"]="provisional low-energy fill; exact source vector/intensity unavailable"
+    sc["website_exposure_default"]=0.9
     return sc
 
 def setup_engine(sc,engine):
