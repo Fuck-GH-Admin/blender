@@ -322,6 +322,87 @@ def build_pmx(pmx_path,tuned,width,height):
     print("PMX_GEOMETRY",len(me.vertices),len(me.polygons),"additive overlay index count skipped",skipped_add,"scale",scale,flush=True)
     return setup_scene(width,height)
 
+GLB_DIAGNOSTICS=[]
+
+def _json_value(v):
+    try:
+        if hasattr(v,"__len__") and not isinstance(v,(str,bytes)):
+            return [float(x) for x in v]
+        return float(v)
+    except Exception:
+        return str(v)
+
+def snapshot_glb(label, meshes):
+    mats={}
+    objects=[]
+    for obj in meshes:
+        slot_names=[m.name if m else None for m in obj.data.materials]
+        poly_counts={}
+        for poly in obj.data.polygons:
+            idx=poly.material_index
+            key=slot_names[idx] if idx<len(slot_names) else "INVALID_SLOT_"+str(idx)
+            poly_counts[key]=poly_counts.get(key,0)+1
+        uv_info=[]
+        for layer in obj.data.uv_layers:
+            vals=[tuple(float(v) for v in item.uv) for item in layer.data]
+            if vals:
+                uv_info.append({
+                    "name":layer.name,"loops":len(vals),
+                    "min":[min(v[i] for v in vals) for i in range(2)],
+                    "max":[max(v[i] for v in vals) for i in range(2)]
+                })
+            else: uv_info.append({"name":layer.name,"loops":0})
+        objects.append({
+            "name":obj.name,"vertices":len(obj.data.vertices),"polygons":len(obj.data.polygons),
+            "materials":slot_names,"polygon_material_counts":poly_counts,
+            "uv_layers":uv_info,
+            "world_location":_json_value(obj.matrix_world.translation)
+        })
+        for mat in obj.data.materials:
+            if not mat or mat.name in mats: continue
+            item={
+                "name":mat.name,"diffuse_color":_json_value(mat.diffuse_color),
+                "use_nodes":mat.use_nodes,
+                "use_backface_culling":getattr(mat,"use_backface_culling",None),
+                "surface_render_method":str(getattr(mat,"surface_render_method",None)),
+                "blend_method":str(getattr(mat,"blend_method",None)),
+                "nodes":[],"links":[]
+            }
+            if mat.use_nodes:
+                nt=mat.node_tree
+                for node in nt.nodes:
+                    nd={"name":node.name,"type":node.type,"bl_idname":node.bl_idname}
+                    if node.type=="TEX_IMAGE":
+                        im=node.image
+                        nd["image"]=None if im is None else {
+                            "name":im.name,"filepath":im.filepath,
+                            "size":list(im.size),"channels":im.channels,
+                            "colorspace":im.colorspace_settings.name,
+                            "alpha_mode":str(im.alpha_mode),"has_data":im.has_data
+                        }
+                    if node.type=="BSDF_PRINCIPLED":
+                        nd["inputs"]={}
+                        for socket_name in ("Base Color","Alpha","Roughness","Metallic","Normal"):
+                            sock=node.inputs.get(socket_name)
+                            if sock is not None:
+                                nd["inputs"][socket_name]={
+                                    "default":_json_value(sock.default_value),
+                                    "linked":bool(sock.is_linked),
+                                    "from":[l.from_node.name+":"+l.from_socket.name for l in sock.links]
+                                }
+                    item["nodes"].append(nd)
+                for link in nt.links:
+                    item["links"].append({
+                        "from":link.from_node.name+":"+link.from_socket.name,
+                        "to":link.to_node.name+":"+link.to_socket.name
+                    })
+            mats[mat.name]=item
+    snap={"label":label,"object_count":len(objects),"material_count":len(mats),
+          "objects":objects,"materials":list(mats.values())}
+    GLB_DIAGNOSTICS.append(snap)
+    print("GLB_IMPORT_DIAGNOSTICS_"+label.upper(),json.dumps(snap,ensure_ascii=False),flush=True)
+    return snap
+
 def build_glb(glb_path,contract_path,textures_dir,tuned,width,height):
     bpy.ops.wm.read_factory_settings(use_empty=True)
     bpy.ops.import_scene.gltf(filepath=glb_path)
@@ -330,6 +411,8 @@ def build_glb(glb_path,contract_path,textures_dir,tuned,width,height):
         if o: bpy.data.objects.remove(o,do_unlink=True)
     sc=bpy.context.scene
     meshes=[o for o in sc.objects if o.type=="MESH"]
+    if not tuned:
+        snapshot_glb("imported_before_state_fix",meshes)
     # Character-only comparison: the PMX input is 爱芮.pmx (not 武器.pmx),
     # so remove GLB weapon / FX / stencil-shadow meshes before measuring bounds.
     excluded=[]
@@ -360,6 +443,7 @@ def build_glb(glb_path,contract_path,textures_dir,tuned,width,height):
                                 mat.node_tree.links.remove(link)
                             alpha.default_value=1.0
             print("GLB_IMPORTED_STATE_FIX",mat.name,"double_sided=True","opaque=True",flush=True)
+        snapshot_glb("imported_after_state_fix",meshes)
     if tuned:
         contract=json.load(open(contract_path,encoding="utf-8"))
         bymat={}
@@ -387,6 +471,7 @@ def build_glb(glb_path,contract_path,textures_dir,tuned,width,height):
         for o in meshes:
             for i,m in enumerate(o.data.materials):
                 if m in replacements: o.data.materials[i]=replacements[m]
+        snapshot_glb("native_dn_after_replacement",meshes)
     return setup_scene(width,height)
 
 def main():
@@ -409,6 +494,8 @@ def main():
                 bpy.ops.file.pack_all()
                 bpy.ops.wm.save_as_mainfile(filepath=blend)
                 print("BLEND_SAVED",blend,flush=True)
+    with open(os.path.join(a.out,"glb_import_diagnostics.json"),"w",encoding="utf-8") as f:
+        json.dump(GLB_DIAGNOSTICS,f,ensure_ascii=False,indent=2)
     with open(os.path.join(os.path.dirname(a.out),"results.json"),"w") as f:
         json.dump(results,f,indent=2)
     print("RENDER_RESOLUTION",a.width,a.height,flush=True)
