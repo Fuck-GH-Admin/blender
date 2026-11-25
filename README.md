@@ -186,3 +186,4 @@ unzip -t /mnt/data/<artifact.zip>
 - 资源搬运 Workflow：[`.github/workflows/aria-blender-transfer.yml`](https://github.com/Fuck-GH-Admin/blender/blob/ops/aria-blender-transfer-20261124/.github/workflows/aria-blender-transfer.yml)
 - Blender 渲染 Workflow：[`.github/workflows/aria-blender-render.yml`](https://github.com/Fuck-GH-Admin/blender/blob/ops/aria-blender-transfer-20261124/.github/workflows/aria-blender-render.yml)
 - 渲染脚本：[`scripts/aria_blender_ablation.py`](https://github.com/Fuck-GH-Admin/blender/blob/ops/aria-blender-transfer-20261124/scripts/aria_blender_ablation.py)
+- GLB 导入与 UV 修复诊断：[`01_分析报告/GLB导入异常与UV修复_20261125.md`](01_分析报告/GLB导入异常与UV修复_20261125.md)
