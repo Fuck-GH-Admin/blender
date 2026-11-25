@@ -1,0 +1,56 @@
+name: AriaIdol preview visual QA thumbnails
+
+on:
+  push:
+    branches:
+      - ops/aria-blender-transfer-20261124
+    paths:
+      - ".github/workflows/aria-blender-preview-qa.yml"
+
+permissions:
+  actions: read
+
+jobs:
+  thumbnails:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Download the 1024x1536 preview artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: aria-blender-preview-1024x1536-45545413981
+          run-id: 45545413981
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          path: ${{ runner.temp }}/preview
+
+      - name: Emit model thumbnails for visual QA
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - ${{ runner.temp }}/preview/aria-ablation-out <<'PY'
+          from PIL import Image
+          import os, sys, io, base64, hashlib, json
+          root=sys.argv[1]
+          names=[
+            "pmx_base_eevee.png","pmx_base_cycles.png",
+            "pmx_tuned_eevee.png","pmx_tuned_cycles.png",
+            "glb_imported_eevee.png","glb_imported_cycles.png",
+            "glb_native_dn_eevee.png","glb_native_dn_cycles.png",
+          ]
+          records=[]
+          for name in names:
+            path=os.path.join(root,name)
+            im=Image.open(path).convert("RGB")
+            digest=hashlib.sha256(open(path,"rb").read()).hexdigest()
+            thumb=im.copy()
+            thumb.thumbnail((768,1152),Image.Resampling.LANCZOS)
+            buf=io.BytesIO()
+            thumb.save(buf,format="JPEG",quality=78,optimize=True,progressive=True)
+            payload=base64.b64encode(buf.getvalue()).decode("ascii")
+            print("QA_IMAGE_START:"+name)
+            print("QA_IMAGE_BASE64:"+payload)
+            print("QA_IMAGE_END:"+name)
+            records.append({"name":name,"size":im.size,"sha256":digest,"thumbnail_bytes":len(buf.getvalue())})
+          print("QA_IMAGE_REPORT:"+json.dumps(records,ensure_ascii=False))
+          PY
